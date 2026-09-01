@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy-950: #05070d;
+  --color-navy-900: #080b16;
+  --color-navy-800: #0d1220;
+  --color-navy-700: #131a2e;
+  --color-navy-600: #1b2440;
+  --color-navy-500: #263153;
+  --color-navy-400: #384368;
+
+  --color-mist-100: #f4f7fc;
+  --color-mist-200: #dbe4f3;
+  --color-mist-300: #b6c4e0;
+  --color-mist-400: #8b9bc2;
+
+  --color-sky-400: #4fc3f7;
+  --color-sky-500: #29b6f6;
+  --color-sky-600: #0ea5e9;
+
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+
+  --color-rose-400: #fb7185;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+:root {
+  --background: var(--color-navy-950);
+  --foreground: var(--color-mist-100);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+}
+
+/* Atmospheric layered background used behind the main app shell */
+.bg-atmospheric {
+  background-color: var(--color-navy-950);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(41, 182, 246, 0.16), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 0%, rgba(251, 191, 36, 0.08), transparent),
+    radial-gradient(ellipse 70% 60% at 50% 110%, rgba(19, 26, 46, 0.9), transparent);
+  background-attachment: fixed;
+}
+
+/* Glassmorphism card - the base visual language of the app */
+.glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.glass-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.glass-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.text-gradient-sky {
+  background: linear-gradient(135deg, var(--color-sky-400), var(--color-mist-100));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Subtle scrollbar that fits the dark theme */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease both;
+}

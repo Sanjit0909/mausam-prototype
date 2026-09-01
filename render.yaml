@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: mausam-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.6-flash
+      - key: CORS_ORIGINS
+        sync: false
