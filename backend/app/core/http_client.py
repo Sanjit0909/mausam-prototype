@@ -3,13 +3,17 @@ import httpx
 
 _client: httpx.AsyncClient | None = None
 
-DEFAULT_TIMEOUT = httpx.Timeout(connect=5.0, read=10.0, write=5.0, pool=5.0)
+# Generous timeouts + automatic connection-level retries: free-tier hosting (e.g. Render's
+# free instances) has far less CPU than a local dev machine, so cold TLS handshakes and DNS
+# lookups can genuinely take a few seconds longer than they did in local testing.
+DEFAULT_TIMEOUT = httpx.Timeout(connect=15.0, read=20.0, write=10.0, pool=10.0)
 
 
 def get_http_client() -> httpx.AsyncClient:
     global _client
     if _client is None:
-        _client = httpx.AsyncClient(timeout=DEFAULT_TIMEOUT)
+        transport = httpx.AsyncHTTPTransport(retries=2)
+        _client = httpx.AsyncClient(timeout=DEFAULT_TIMEOUT, transport=transport)
     return _client
 
 
