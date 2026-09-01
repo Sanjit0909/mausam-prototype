@@ -32,6 +32,9 @@ async def fetch_raw(lat: float, lon: float, days: int = MAX_DAYS) -> dict:  # no
 
     async def _fetch() -> dict:
         try:
+            # Only 1 retry here (not the default) - a robust OpenWeatherMap fallback exists
+            # one level up, so we fail over to it quickly instead of burning several seconds
+            # retrying a rate limit that a keyless, shared-IP-limited API may not clear soon.
             resp = await get_with_backoff(
                 FORECAST_URL,
                 params={
@@ -43,6 +46,7 @@ async def fetch_raw(lat: float, lon: float, days: int = MAX_DAYS) -> dict:  # no
                     "timezone": "auto",
                     "forecast_days": MAX_DAYS,
                 },
+                max_retries=1,
             )
             return resp.json()
         except Exception as exc:  # noqa: BLE001 - normalize all upstream failures

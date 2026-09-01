@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from ..models.ai import ChatRequest, ChatResponse
 from ..services.ai_assistant import generate_reply
 from ..services.air_quality import get_air_quality
-from ..services.open_meteo import get_current_weather, get_forecast
+from ..services.weather_provider import get_current_weather, get_forecast
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 

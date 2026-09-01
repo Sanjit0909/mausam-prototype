@@ -9,7 +9,7 @@ from datetime import date, datetime
 
 from ..models.common import LocationInfo
 from ..models.environment import AstronomyResponse
-from .open_meteo import fetch_raw
+from .weather_provider import get_sun_times
 
 SYNODIC_MONTH_DAYS = 29.53058867
 KNOWN_NEW_MOON = datetime(2000, 1, 6, 18, 14)
@@ -43,21 +43,15 @@ def compute_moon_phase(d: date) -> tuple[str, float]:
 
 
 async def get_astronomy(lat: float, lon: float, name: str | None = None) -> AstronomyResponse:
-    raw = await fetch_raw(lat, lon, days=1)
-    daily = raw.get("daily", {})
     today = date.today()
     phase_name, illumination = compute_moon_phase(today)
+    sunrise, sunset = await get_sun_times(lat, lon)
 
     return AstronomyResponse(
-        location=LocationInfo(
-            name=name or "Selected location",
-            lat=raw.get("latitude", lat),
-            lon=raw.get("longitude", lon),
-            timezone=raw.get("timezone"),
-        ),
-        date=daily.get("time", [today.isoformat()])[0],
-        sunrise=daily.get("sunrise", [None])[0],
-        sunset=daily.get("sunset", [None])[0],
+        location=LocationInfo(name=name or "Selected location", lat=lat, lon=lon),
+        date=today.isoformat(),
+        sunrise=sunrise,
+        sunset=sunset,
         moonrise=None,
         moonset=None,
         moon_phase=phase_name,

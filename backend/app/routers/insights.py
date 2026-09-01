@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query
 
 from ..models.personalization import InsightsResponse
 from ..services.air_quality import get_air_quality
-from ..services.open_meteo import get_current_weather, get_forecast
+from ..services.weather_provider import get_current_weather, get_forecast
 from ..services.recommendation_engine import build_insights_response
 
 router = APIRouter(prefix="/api/insights", tags=["insights"])

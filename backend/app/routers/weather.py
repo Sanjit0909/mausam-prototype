@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query
 
 from ..models.weather import WeatherResponse
-from ..services.open_meteo import get_current_weather
+from ..services.weather_provider import get_current_weather
 
 router = APIRouter(prefix="/api/weather", tags=["weather"])
 

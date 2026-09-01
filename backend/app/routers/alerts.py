@@ -6,7 +6,7 @@ from ..models.alerts import AlertsResponse
 from ..services.air_quality import get_air_quality
 from ..services.alerts_engine import generate_derived_alerts
 from ..services.nws_alerts import fetch_nws_alerts
-from ..services.open_meteo import get_current_weather, get_forecast
+from ..services.weather_provider import get_current_weather, get_forecast
 
 router = APIRouter(prefix="/api/alerts", tags=["alerts"])
 

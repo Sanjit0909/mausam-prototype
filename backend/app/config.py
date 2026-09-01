@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.6-flash"
 
+    openweathermap_api_key: str = ""
+
     cors_origins: str = "http://localhost:3000"
 
     model_config = SettingsConfigDict(
@@ -28,6 +30,10 @@ class Settings(BaseSettings):
     @property
     def has_gemini_key(self) -> bool:
         return bool(self.gemini_api_key.strip())
+
+    @property
+    def has_owm_key(self) -> bool:
+        return bool(self.openweathermap_api_key.strip())
 
 
 @lru_cache
