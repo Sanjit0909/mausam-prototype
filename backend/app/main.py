@@ -33,7 +33,10 @@ app.add_middleware(
 
 @app.exception_handler(UpstreamAPIError)
 async def upstream_error_handler(_: Request, exc: UpstreamAPIError) -> JSONResponse:
-    logger.warning("Upstream API error from %s: %s", exc.source, exc)
+    # exc_info surfaces the original underlying exception (e.g. the exact httpx
+    # connect/timeout/SSL error) in server logs - critical for diagnosing hosting-specific
+    # network issues that never reproduce locally.
+    logger.warning("Upstream API error from %s: %s", exc.source, exc, exc_info=exc.__cause__)
     return JSONResponse(status_code=503, content={"error": True, "message": exc.message, "source": exc.source})
 
 
