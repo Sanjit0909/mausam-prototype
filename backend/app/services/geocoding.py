@@ -1,6 +1,6 @@
 """Location search via Open-Meteo's free geocoding API (no key required)."""
 from ..core.cache import TTLCache
-from ..core.http_client import UpstreamAPIError, get_http_client
+from ..core.http_client import UpstreamAPIError, get_http_client, get_with_backoff
 from ..models.common import LocationSearchResult
 
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
@@ -15,13 +15,11 @@ async def search_locations(query: str, count: int = 8) -> list[LocationSearchRes
     key = f"search:{query.lower()}:{count}"
 
     async def _fetch() -> list[LocationSearchResult]:
-        client = get_http_client()
         try:
-            resp = await client.get(
+            resp = await get_with_backoff(
                 GEOCODING_URL,
                 params={"name": query, "count": count, "language": "en", "format": "json"},
             )
-            resp.raise_for_status()
         except Exception as exc:  # noqa: BLE001 - normalize all upstream failures
             raise UpstreamAPIError("geocoding", "Location search is temporarily unavailable") from exc
 

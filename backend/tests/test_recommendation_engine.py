@@ -55,7 +55,18 @@ def test_insight_flags_poor_air_quality_for_health_interest():
     assert any("air quality" in i.message.lower() for i in insights)
 
 
-def test_insight_flags_high_uv_when_no_aqi_data():
+def test_insight_flags_high_uv_when_no_aqi_data(monkeypatch):
+    import app.services.recommendation_engine as engine
+
+    # The UV insight is intentionally time-gated (no daytime UV warning at night) - freeze
+    # "now" to a daytime hour so this test is deterministic regardless of when it's run.
+    class _FixedDatetime(engine.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 1, 1, 12, 0, 0)
+
+    monkeypatch.setattr(engine, "datetime", _FixedDatetime)
+
     weather = make_weather(uv_index=9.0)
     insights = generate_insights(weather, forecast=None, air_quality=None, interests=["outdoor_fitness"])
     assert any("uv" in i.message.lower() for i in insights)

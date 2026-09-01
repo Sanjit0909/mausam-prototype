@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 
 from ..core.cache import TTLCache, location_key
-from ..core.http_client import UpstreamAPIError, get_http_client
+from ..core.http_client import UpstreamAPIError, get_with_backoff
 from ..models.common import LocationInfo
 from ..models.weather import CurrentWeather, DailyPoint, ForecastResponse, HourlyPoint, WeatherResponse
 from .weather_codes import describe_weather_code
@@ -19,16 +19,20 @@ DAILY_VARS = (
     "sunrise,sunset,uv_index_max"
 )
 
-_cache = TTLCache(ttl_seconds=300)
+_cache = TTLCache(ttl_seconds=600)
+
+MAX_DAYS = 7  # Always fetch the max useful range internally, regardless of what any single
+# caller asks for, so every endpoint for a given location shares ONE cached Open-Meteo call
+# instead of a separate call per distinct `days` value. This matters a lot on free-tier,
+# IP-rate-limited hosting where reducing call volume is the main lever available.
 
 
-async def fetch_raw(lat: float, lon: float, days: int) -> dict:
-    key = f"raw:{location_key(lat, lon)}:{days}"
+async def fetch_raw(lat: float, lon: float, days: int = MAX_DAYS) -> dict:  # noqa: ARG001 - kept for API compat
+    key = f"raw:{location_key(lat, lon)}"
 
     async def _fetch() -> dict:
-        client = get_http_client()
         try:
-            resp = await client.get(
+            resp = await get_with_backoff(
                 FORECAST_URL,
                 params={
                     "latitude": lat,
@@ -37,10 +41,9 @@ async def fetch_raw(lat: float, lon: float, days: int) -> dict:
                     "hourly": HOURLY_VARS,
                     "daily": DAILY_VARS,
                     "timezone": "auto",
-                    "forecast_days": days,
+                    "forecast_days": MAX_DAYS,
                 },
             )
-            resp.raise_for_status()
             return resp.json()
         except Exception as exc:  # noqa: BLE001 - normalize all upstream failures
             stale = _cache.get_stale(key)
@@ -61,7 +64,7 @@ def _location_info(raw: dict, lat: float, lon: float, name: str | None) -> Locat
 
 
 async def get_current_weather(lat: float, lon: float, name: str | None = None) -> WeatherResponse:
-    raw = await fetch_raw(lat, lon, days=1)
+    raw = await fetch_raw(lat, lon)
     current = raw["current"]
     condition, group = describe_weather_code(current.get("weather_code", 0))
 
@@ -96,11 +99,12 @@ async def get_current_weather(lat: float, lon: float, name: str | None = None) -
 
 
 async def get_forecast(lat: float, lon: float, days: int = 7, name: str | None = None) -> ForecastResponse:
-    raw = await fetch_raw(lat, lon, days=days)
+    raw = await fetch_raw(lat, lon)
+    days = min(days, MAX_DAYS)
 
     hourly_raw = raw.get("hourly", {})
     hourly_points: list[HourlyPoint] = []
-    times = hourly_raw.get("time", [])
+    times = hourly_raw.get("time", [])[: days * 24]
     for i, t in enumerate(times):
         code = hourly_raw.get("weather_code", [0] * len(times))[i]
         condition, group = describe_weather_code(code)
@@ -120,7 +124,7 @@ async def get_forecast(lat: float, lon: float, days: int = 7, name: str | None =
 
     daily_raw = raw.get("daily", {})
     daily_points: list[DailyPoint] = []
-    dates = daily_raw.get("time", [])
+    dates = daily_raw.get("time", [])[:days]
     for i, d in enumerate(dates):
         code = daily_raw.get("weather_code", [0] * len(dates))[i]
         condition, group = describe_weather_code(code)

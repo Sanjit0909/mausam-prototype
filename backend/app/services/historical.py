@@ -2,7 +2,7 @@
 from datetime import date, timedelta
 
 from ..core.cache import TTLCache, location_key
-from ..core.http_client import UpstreamAPIError, get_http_client
+from ..core.http_client import UpstreamAPIError, get_with_backoff
 from ..models.common import LocationInfo
 from ..models.environment import HistoricalPoint, HistoricalResponse
 
@@ -17,9 +17,8 @@ async def get_historical(lat: float, lon: float, days: int = 30, name: str | Non
     key = f"hist:{location_key(lat, lon)}:{start}:{end}"
 
     async def _fetch() -> dict:
-        client = get_http_client()
         try:
-            resp = await client.get(
+            resp = await get_with_backoff(
                 ARCHIVE_URL,
                 params={
                     "latitude": lat,
@@ -30,7 +29,6 @@ async def get_historical(lat: float, lon: float, days: int = 30, name: str | Non
                     "timezone": "auto",
                 },
             )
-            resp.raise_for_status()
             return resp.json()
         except Exception as exc:  # noqa: BLE001
             raise UpstreamAPIError("open-meteo-archive", "Historical data is temporarily unavailable") from exc

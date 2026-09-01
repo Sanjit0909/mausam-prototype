@@ -6,7 +6,7 @@ WorldTides/StormGlass require paid keys) - they are returned as clearly-flagged 
 observations, per the "never present fabricated data as real" rule.
 """
 from ..core.cache import TTLCache, location_key
-from ..core.http_client import get_http_client
+from ..core.http_client import get_with_backoff
 from ..models.common import LocationInfo
 from ..models.environment import MarineConditions, MarineResponse, TideEvent
 
@@ -27,9 +27,8 @@ async def get_marine(lat: float, lon: float, name: str | None = None) -> MarineR
     key = f"marine:{location_key(lat, lon)}"
 
     async def _fetch() -> dict | None:
-        client = get_http_client()
         try:
-            resp = await client.get(
+            resp = await get_with_backoff(
                 MARINE_URL,
                 params={
                     "latitude": lat,
@@ -39,7 +38,6 @@ async def get_marine(lat: float, lon: float, name: str | None = None) -> MarineR
                     "forecast_days": 3,
                 },
             )
-            resp.raise_for_status()
             return resp.json()
         except Exception:  # noqa: BLE001 - marine is secondary; never break the app over it
             return None
