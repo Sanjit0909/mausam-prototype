@@ -1,4 +1,5 @@
 import { Activity, Briefcase, Calendar, Car, Heart, Sprout, Users, Waves } from "lucide-react";
+import { WhyThis } from "@/components/common/WhyThis";
 import type { RecommendationCard as RecommendationCardType } from "@/lib/types";
 
 const ICONS: Record<string, typeof Activity> = {
@@ -14,13 +15,14 @@ const ICONS: Record<string, typeof Activity> = {
 
 const INTEREST_LABELS: Record<string, string> = {
   outdoor_fitness: "Outdoor Fitness",
-  travel: "Travel",
-  family: "Family",
-  agriculture: "Agriculture",
-  marine_beach: "Marine / Beach",
-  commuting: "Commuting",
-  events: "Events",
-  health: "Health",
+  travel: "Traveler",
+  family: "Parent / Family",
+  agriculture: "Farmer / Agriculture",
+  marine_beach: "Fisherman / Marine",
+  commuting: "Commuter",
+  events: "Event Planner",
+  health: "Health-conscious",
+  elderly: "Elderly / Vulnerable",
 };
 
 export function RecommendationCard({ card }: { card: RecommendationCardType }) {
@@ -40,6 +42,11 @@ export function RecommendationCard({ card }: { card: RecommendationCardType }) {
         <h4 className="font-medium text-mist-100">{card.title}</h4>
         <p className="mt-1 text-sm text-mist-400">{card.description}</p>
       </div>
+      {card.reason && (
+        <div className="border-t border-white/5 pt-2">
+          <WhyThis reason={card.reason} label={card.label} />
+        </div>
+      )}
     </div>
   );
 }

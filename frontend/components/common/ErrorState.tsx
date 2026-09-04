@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface ErrorStateProps {
   message?: string;
@@ -9,6 +10,7 @@ interface ErrorStateProps {
 }
 
 export function ErrorState({ message = "Something went wrong. Please try again.", onRetry, compact }: ErrorStateProps) {
+  const { t } = useLanguage();
   return (
     <div
       className={`glass rounded-3xl flex flex-col items-center justify-center text-center gap-3 ${
@@ -22,9 +24,9 @@ export function ErrorState({ message = "Something went wrong. Please try again."
       {onRetry && (
         <button
           onClick={onRetry}
-          className="mt-1 inline-flex items-center gap-2 rounded-full bg-white/[0.08] hover:bg-white/[0.14] transition-colors px-4 py-2 text-sm font-medium text-mist-100"
+          className="mt-1 inline-flex min-h-11 items-center gap-2 rounded-full bg-white/[0.08] px-4 py-2 text-sm font-medium text-mist-100 transition-colors hover:bg-white/[0.14]"
         >
-          <RefreshCw className="h-4 w-4" /> Try again
+          <RefreshCw className="h-4 w-4" /> {t("common.retry")}
         </button>
       )}
     </div>

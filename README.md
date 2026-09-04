@@ -10,7 +10,7 @@ the same generic dashboard.
 - **Frontend**: Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS v4 + Recharts + Lucide icons
 - **Backend**: Python + FastAPI (weather aggregation, personalization engine, AI assistant)
 - **Auth / Database**: Supabase (email/password auth + Postgres with Row Level Security)
-- **AI**: Google Gemini (`google-genai` SDK), with an automatic rule-based fallback assistant if no key is configured
+- **AI**: DeepSeek V4 Flash (primary) → Gemini → OpenRouter free (`openrouter/free`) → MAUSAM rule engine. The user never sees a raw provider error.
 - **Weather / Environmental data**: Open-Meteo (forecast, air quality, geocoding, marine, historical archive — all free, no API key required) + US National Weather Service (bonus live alerts, US-only)
 
 ## Project Structure
@@ -55,8 +55,9 @@ pip install -r requirements.txt
 Edit `backend/.env` (copy from `.env.example` if missing):
 
 ```
-GEMINI_API_KEY=your_key_here     # optional — leave blank to use the rule-based fallback assistant
-GEMINI_MODEL=gemini-2.5-flash
+DEEPSEEK_API_KEY=your_key_here      # primary AI; leave blank to skip this tier
+GEMINI_API_KEY=your_key_here        # fallback if DeepSeek fails
+OPENROUTER_API_KEY=your_key_here    # fallback if Gemini fails; uses openrouter/free
 CORS_ORIGINS=http://localhost:3000
 ```
 
@@ -136,10 +137,11 @@ for a real deployment).
 - **Moonrise/moonset** times are intentionally omitted (not estimated) — accurate values need a
   full lunar ephemeris, out of scope for this prototype. Moon **phase** and **illumination %**
   are real, computed from a standard astronomical formula.
-- The **AI assistant** uses Google Gemini when `GEMINI_API_KEY` is configured and valid; if the
-  key is missing or a call fails, it automatically falls back to a template-based assistant that
-  still uses real, live weather data — the chat UI shows a small "Smart Assistant · offline mode"
-  label whenever a reply came from the fallback path.
+- The **AI assistant** tries DeepSeek V4 Flash first, then Gemini, then OpenRouter's free-model
+  router (`openrouter/free`). If every LLM call fails or no keys are configured, a template
+  assistant still answers from live weather data. The chat UI labels which tier produced the reply
+  (`DeepSeek V4 Flash`, `Gemini`, `OpenRouter`, or `Smart Assistant · offline mode`). Raw 429/500
+  errors are never shown.
 
 ## Personalization Engine
 

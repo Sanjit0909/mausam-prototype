@@ -18,5 +18,7 @@ export function sendChatMessage(
     units: "metric",
     history,
   };
-  return apiFetch<ChatResponse>("/api/ai/chat", { method: "POST", body: payload, timeoutMs: 25000 });
+  // Cascade can try DeepSeek -> Gemini -> OpenRouter before the rule engine; keep this
+  // above the sum of those per-provider timeouts so the UI does not abort mid-fallback.
+  return apiFetch<ChatResponse>("/api/ai/chat", { method: "POST", body: payload, timeoutMs: 45000 });
 }

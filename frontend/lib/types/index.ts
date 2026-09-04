@@ -149,13 +149,17 @@ export interface WeatherAlert {
   description: string;
   severity: AlertSeverity;
   alert_type: string;
-  source: "official" | "derived";
+  source: "IMD" | "NWS" | "derived";
+  provider_label: string;
+  area?: string | null;
   issued_at: string;
+  updated_at?: string | null;
 }
 
 export interface AlertsResponse {
   location_name: string;
   alerts: WeatherAlert[];
+  has_severe: boolean;
 }
 
 export type InterestKey =
@@ -166,12 +170,15 @@ export type InterestKey =
   | "agriculture"
   | "commuting"
   | "marine_beach"
-  | "events";
+  | "events"
+  | "elderly";
 
 export interface PersonalizedInsight {
   message: string;
   icon: string;
   priority: number;
+  reason: string;
+  label: string;
 }
 
 export interface RecommendationCard {
@@ -179,10 +186,13 @@ export interface RecommendationCard {
   title: string;
   description: string;
   icon: string;
+  reason: string;
+  label: string;
 }
 
 export interface InsightsResponse {
   card_order: string[];
+  card_reasons: Record<string, string>;
   insights: PersonalizedInsight[];
   recommendations: RecommendationCard[];
 }
@@ -202,9 +212,11 @@ export interface ChatRequest {
   history: ChatMessage[];
 }
 
+export type ChatSource = "deepseek" | "gemini" | "openrouter" | "fallback";
+
 export interface ChatResponse {
   reply: string;
-  source: "gemini" | "fallback";
+  source: ChatSource;
 }
 
 export interface ApiErrorPayload {

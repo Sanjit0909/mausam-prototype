@@ -1,5 +1,6 @@
 import { Waves } from "lucide-react";
-import { formatTime } from "@/lib/utils/format";
+import { SourceBadge } from "@/components/common/SourceBadge";
+import { formatTime, providerDisplayName } from "@/lib/utils/format";
 import type { MarineResponse } from "@/lib/types";
 
 export function MarineCard({ data }: { data: MarineResponse }) {
@@ -27,14 +28,18 @@ export function MarineCard({ data }: { data: MarineResponse }) {
         </div>
       </div>
 
+      <SourceBadge provider={providerDisplayName(data.source)} kind="Wave & Swell" />
+
       {data.tides.length > 0 && (
         <div className="border-t border-white/5 pt-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[11px] text-mist-400">Today&apos;s tides</p>
-            {data.is_demo_tide && (
+            {data.is_demo_tide ? (
               <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
                 Sample data
               </span>
+            ) : (
+              <SourceBadge provider="Stormglass" kind="Real Tide Data" />
             )}
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-mist-300">

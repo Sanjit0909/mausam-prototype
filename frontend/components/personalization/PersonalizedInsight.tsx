@@ -1,4 +1,5 @@
 import { Activity, AlertCircle, CheckCircle2, Snowflake, Sun, Thermometer, Umbrella, Wind } from "lucide-react";
+import { WhyThis } from "@/components/common/WhyThis";
 import type { PersonalizedInsight as PersonalizedInsightType } from "@/lib/types";
 
 const ICONS: Record<string, typeof Sun> = {
@@ -9,6 +10,7 @@ const ICONS: Record<string, typeof Sun> = {
   activity: Activity,
   snowflake: Snowflake,
   "check-circle": CheckCircle2,
+  heart: AlertCircle,
   info: AlertCircle,
 };
 
@@ -20,7 +22,10 @@ export function PersonalizedInsight({ insight }: { insight: PersonalizedInsightT
       <div className="rounded-xl bg-sky-500/10 p-2 shrink-0">
         <Icon className="h-5 w-5 text-sky-300" />
       </div>
-      <p className="text-sm text-mist-200">{insight.message}</p>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-mist-200">{insight.message}</p>
+        {insight.reason && <WhyThis reason={insight.reason} label={insight.label} className="mt-1" />}
+      </div>
     </div>
   );
 }

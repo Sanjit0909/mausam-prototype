@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { MapPin } from "lucide-react";
+import { SourceBadge } from "@/components/common/SourceBadge";
 import { WeatherIcon } from "@/components/weather/WeatherIcon";
-import { formatTemp, locationLabel } from "@/lib/utils/format";
+import { formatTemp, locationLabel, providerDisplayName } from "@/lib/utils/format";
 import type { WeatherResponse } from "@/lib/types";
 
 interface WeatherHeroProps {
@@ -57,6 +58,14 @@ export function WeatherHero({ weather }: WeatherHeroProps) {
           <p className="mt-2 text-mist-400">
             Feels like {formatTemp(current.feels_like)} &middot; {dateLabel} &middot; {timeLabel}
           </p>
+
+          <SourceBadge
+            provider={providerDisplayName(weather.source)}
+            kind="Current Conditions"
+            updatedAt={current.observed_at}
+            official={weather.source === "imd"}
+            className="mt-3"
+          />
         </div>
 
         <div className="flex flex-col items-center gap-2 animate-float">

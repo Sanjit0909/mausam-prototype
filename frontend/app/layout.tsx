@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { PreferencesProvider } from "@/context/PreferencesContext";
 import { LocationProvider } from "@/context/LocationContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 import { Navbar } from "@/components/layout/Navbar";
 
 const geistSans = Geist({
@@ -25,14 +26,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-atmospheric text-mist-100">
-        <AuthProvider>
-          <PreferencesProvider>
-            <LocationProvider>
-              <Navbar />
-              {children}
-            </LocationProvider>
-          </PreferencesProvider>
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <PreferencesProvider>
+              <LocationProvider>
+                <Navbar />
+                {children}
+              </LocationProvider>
+            </PreferencesProvider>
+          </AuthProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

@@ -6,12 +6,15 @@ import { useState } from "react";
 import { Bell, CloudSun, LogOut, MapPin, Menu, MessageCircle, Search, Settings, User, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLocation } from "@/context/LocationContext";
+import { useLanguage } from "@/context/LanguageContext";
+import { LanguageToggle } from "@/components/common/LanguageToggle";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
-const NAV_LINKS = [
-  { href: "/home", label: "Home" },
-  { href: "/explore", label: "Explore" },
-  { href: "/alerts", label: "Alerts" },
-  { href: "/assistant", label: "Assistant" },
+const NAV_LINKS: { href: string; labelKey: TranslationKey }[] = [
+  { href: "/home", labelKey: "nav.home" },
+  { href: "/explore", labelKey: "nav.explore" },
+  { href: "/alerts", labelKey: "nav.alerts" },
+  { href: "/assistant", labelKey: "nav.assistant" },
 ];
 
 export function Navbar() {
@@ -19,6 +22,7 @@ export function Navbar() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const { location } = useLocation();
+  const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -47,13 +51,13 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                className={`min-h-11 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                   pathname.startsWith(link.href)
                     ? "bg-white/10 text-mist-100"
                     : "text-mist-400 hover:text-mist-100 hover:bg-white/5"
                 }`}
               >
-                {link.label}
+                {t(link.labelKey)}
               </Link>
             ))}
           </nav>
@@ -69,10 +73,12 @@ export function Navbar() {
             <Search className="h-3.5 w-3.5 opacity-60" />
           </Link>
 
+          <LanguageToggle />
+
           <Link
             href="/alerts"
-            className="rounded-full p-2 text-mist-300 hover:bg-white/10 hover:text-mist-100 transition-colors"
-            aria-label="Alerts"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-mist-300 transition-colors hover:bg-white/10 hover:text-mist-100"
+            aria-label={t("nav.alerts")}
           >
             <Bell className="h-5 w-5" />
           </Link>
@@ -80,7 +86,7 @@ export function Navbar() {
           <div className="relative hidden sm:block">
             <button
               onClick={() => setProfileOpen((v) => !v)}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-mist-100 hover:bg-white/20 transition-colors"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-mist-100 transition-colors hover:bg-white/20"
               aria-label="Profile menu"
             >
               <User className="h-4 w-4" />
@@ -96,20 +102,20 @@ export function Navbar() {
                   className="flex items-center gap-2 rounded-xl px-3 py-2 text-mist-200 hover:bg-white/10"
                   onClick={() => setProfileOpen(false)}
                 >
-                  <Settings className="h-4 w-4" /> Profile & Preferences
+                  <Settings className="h-4 w-4" /> {t("nav.profile")}
                 </Link>
                 <Link
                   href="/assistant"
-                  className="flex items-center gap-2 rounded-xl px-3 py-2 text-mist-200 hover:bg-white/10"
+                  className="flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-mist-200 hover:bg-white/10"
                   onClick={() => setProfileOpen(false)}
                 >
-                  <MessageCircle className="h-4 w-4" /> AI Assistant
+                  <MessageCircle className="h-4 w-4" /> {t("nav.assistant")}
                 </Link>
                 <button
                   onClick={handleSignOut}
-                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-rose-400 hover:bg-rose-500/10"
+                  className="flex min-h-11 w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-rose-400 hover:bg-rose-500/10"
                 >
-                  <LogOut className="h-4 w-4" /> Sign out
+                  <LogOut className="h-4 w-4" /> {t("nav.signOut")}
                 </button>
               </div>
             )}
@@ -117,7 +123,7 @@ export function Navbar() {
 
           <button
             onClick={() => setMenuOpen((v) => !v)}
-            className="md:hidden rounded-full p-2 text-mist-300 hover:bg-white/10"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-mist-300 hover:bg-white/10 md:hidden"
             aria-label="Menu"
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -132,18 +138,18 @@ export function Navbar() {
               key={link.href}
               href={link.href}
               onClick={() => setMenuOpen(false)}
-              className={`rounded-xl px-3 py-2 text-sm font-medium ${
+              className={`min-h-11 rounded-xl px-3 py-2 text-sm font-medium ${
                 pathname.startsWith(link.href) ? "bg-white/10 text-mist-100" : "text-mist-300"
               }`}
             >
-              {link.label}
+              {t(link.labelKey)}
             </Link>
           ))}
-          <Link href="/profile" onClick={() => setMenuOpen(false)} className="rounded-xl px-3 py-2 text-sm text-mist-300">
-            Profile & Preferences
+          <Link href="/profile" onClick={() => setMenuOpen(false)} className="min-h-11 rounded-xl px-3 py-2 text-sm text-mist-300">
+            {t("nav.profile")}
           </Link>
-          <button onClick={handleSignOut} className="rounded-xl px-3 py-2 text-left text-sm text-rose-400">
-            Sign out
+          <button onClick={handleSignOut} className="min-h-11 rounded-xl px-3 py-2 text-left text-sm text-rose-400">
+            {t("nav.signOut")}
           </button>
         </div>
       )}

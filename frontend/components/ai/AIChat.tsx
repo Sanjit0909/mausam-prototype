@@ -5,27 +5,38 @@ import { Bot, Loader2, Send, Sparkles, User } from "lucide-react";
 import { sendChatMessage } from "@/lib/api/ai";
 import { useLocation } from "@/context/LocationContext";
 import { usePreferences } from "@/context/PreferencesContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { locationLabel } from "@/lib/utils/format";
-import type { ChatMessage } from "@/lib/types";
+import type { TranslationKey } from "@/lib/i18n/translations";
+import type { ChatMessage, ChatSource } from "@/lib/types";
 
-const SUGGESTIONS = [
-  "Should I go for a run today?",
-  "Will it rain tonight?",
-  "What should I carry if I travel tomorrow?",
-  "Is today good for an outdoor event?",
+const SOURCE_LABELS: Record<ChatSource, string> = {
+  deepseek: "DeepSeek V4 Flash",
+  gemini: "Gemini",
+  openrouter: "OpenRouter",
+  fallback: "Smart Assistant · offline mode",
+};
+
+const SUGGESTION_KEYS: TranslationKey[] = [
+  "assistant.suggest.run",
+  "assistant.suggest.rain",
+  "assistant.suggest.travel",
+  "assistant.suggest.event",
 ];
 
 interface DisplayMessage extends ChatMessage {
-  source?: "gemini" | "fallback";
+  source?: ChatSource;
 }
 
 export function AIChat() {
   const { location } = useLocation();
   const { preferences } = usePreferences();
+  const { t } = useLanguage();
+  const welcome = t("assistant.welcome", { name: location.name });
   const [messages, setMessages] = useState<DisplayMessage[]>([
     {
       role: "assistant",
-      content: `Hi! I'm your MAUSAM weather assistant. Ask me anything about the weather in ${location.name} \u2014 running conditions, rain chances, travel packing, or event planning.`,
+      content: welcome,
     },
   ]);
   const [input, setInput] = useState("");
@@ -36,6 +47,15 @@ export function AIChat() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
+
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0].role === "assistant" && !prev[0].source) {
+        return [{ ...prev[0], content: welcome }];
+      }
+      return prev;
+    });
+  }, [welcome]);
 
   const handleSend = async (text: string) => {
     const trimmed = text.trim();
@@ -51,7 +71,7 @@ export function AIChat() {
       const res = await sendChatMessage(trimmed, location.lat, location.lon, locationLabel(location), preferences.interests, history);
       setMessages((prev) => [...prev, { role: "assistant", content: res.reply, source: res.source }]);
     } catch {
-      setError("The assistant is having trouble responding right now. Please try again.");
+      setError(t("assistant.error"));
     } finally {
       setLoading(false);
     }
@@ -64,8 +84,8 @@ export function AIChat() {
           <Sparkles className="h-4 w-4 text-navy-950" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-mist-100">MAUSAM Assistant</p>
-          <p className="text-xs text-mist-400">Context-aware for {location.name}</p>
+          <p className="text-sm font-semibold text-mist-100">{t("assistant.title")}</p>
+          <p className="text-xs text-mist-400">{t("assistant.context", { name: location.name })}</p>
         </div>
       </div>
 
@@ -84,8 +104,10 @@ export function AIChat() {
             }`}
             >
               <p className="whitespace-pre-wrap">{msg.content}</p>
-              {msg.source === "fallback" && (
-                <p className="mt-1.5 text-[10px] uppercase tracking-wide text-mist-400">Smart Assistant &middot; offline mode</p>
+              {msg.source && (
+                <p className="mt-1.5 text-[10px] uppercase tracking-wide text-mist-400">
+                  {SOURCE_LABELS[msg.source] ?? msg.source}
+                </p>
               )}
             </div>
           </div>
@@ -98,7 +120,7 @@ export function AIChat() {
             </div>
             <div className="flex items-center gap-2 rounded-2xl bg-white/[0.06] px-4 py-2.5">
               <Loader2 className="h-3.5 w-3.5 animate-spin text-mist-400" />
-              <span className="text-xs text-mist-400">Thinking...</span>
+              <span className="text-xs text-mist-400">{t("assistant.thinking")}</span>
             </div>
           </div>
         )}
@@ -107,13 +129,13 @@ export function AIChat() {
 
       {messages.length <= 1 && (
         <div className="flex flex-wrap gap-2 px-6 pb-3">
-          {SUGGESTIONS.map((s) => (
+          {SUGGESTION_KEYS.map((key) => (
             <button
-              key={s}
-              onClick={() => handleSend(s)}
-              className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-mist-300 hover:bg-white/10 transition-colors"
+              key={key}
+              onClick={() => handleSend(t(key))}
+              className="min-h-11 rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-mist-300 transition-colors hover:bg-white/10"
             >
-              {s}
+              {t(key)}
             </button>
           ))}
         </div>
@@ -129,13 +151,13 @@ export function AIChat() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about the weather..."
-          className="flex-1 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-mist-100 placeholder:text-mist-400 outline-none focus:border-sky-400/50"
+          placeholder={t("assistant.placeholder")}
+          className="min-h-11 flex-1 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-mist-100 placeholder:text-mist-400 outline-none focus:border-sky-400/50"
         />
         <button
           type="submit"
           disabled={loading || !input.trim()}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-500 text-navy-950 transition-colors hover:bg-sky-400 disabled:opacity-40"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sky-500 text-navy-950 transition-colors hover:bg-sky-400 disabled:opacity-40"
         >
           <Send className="h-4 w-4" />
         </button>

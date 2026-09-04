@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LanguageToggle } from "@/components/common/LanguageToggle";
 import {
   ArrowRight,
   Bike,
@@ -55,12 +56,13 @@ export default function LandingPage() {
           <span className="text-lg font-semibold tracking-tight">MAUSAM</span>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/login" className="text-sm font-medium text-mist-300 hover:text-mist-100 transition-colors">
+          <LanguageToggle />
+          <Link href="/login" className="flex min-h-11 items-center text-sm font-medium text-mist-300 transition-colors hover:text-mist-100">
             Log In
           </Link>
           <Link
             href="/signup"
-            className="rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-navy-950 hover:bg-sky-400 transition-colors"
+            className="flex min-h-11 items-center rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-navy-950 transition-colors hover:bg-sky-400"
           >
             Get Started
           </Link>

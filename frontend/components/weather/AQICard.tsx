@@ -1,13 +1,30 @@
+"use client";
+
 import { Wind } from "lucide-react";
-import { aqiColor } from "@/lib/utils/format";
+import { SourceBadge } from "@/components/common/SourceBadge";
+import { WhyThis } from "@/components/common/WhyThis";
+import { aqiColor, providerDisplayName } from "@/lib/utils/format";
 import type { AirQualityResponse } from "@/lib/types";
 
-export function AQICard({ data }: { data: AirQualityResponse }) {
+export function AQICard({
+  data,
+  reason,
+  onActivate,
+}: {
+  data: AirQualityResponse;
+  reason?: string;
+  onActivate?: () => void;
+}) {
   const aqi = data.us_aqi ?? null;
   const pct = aqi !== null ? Math.min(100, (aqi / 300) * 100) : 0;
 
   return (
-    <div className="glass glass-hover rounded-3xl p-5 flex flex-col gap-3">
+    <div
+      className="glass glass-hover flex min-h-[8.5rem] cursor-pointer flex-col gap-3 rounded-3xl p-4 sm:p-5"
+      onClick={onActivate}
+      role={onActivate ? "button" : undefined}
+      tabIndex={onActivate ? 0 : undefined}
+    >
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium uppercase tracking-wide text-mist-400">Air Quality</span>
         <Wind className={`h-4 w-4 ${aqiColor(aqi)}`} />
@@ -27,6 +44,8 @@ export function AQICard({ data }: { data: AirQualityResponse }) {
           style={{ width: `${pct}%` }}
         />
       </div>
+      <SourceBadge provider={providerDisplayName(data.source)} kind="AQI" />
+      {reason && <WhyThis reason={reason} />}
     </div>
   );
 }

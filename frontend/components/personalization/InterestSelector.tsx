@@ -1,24 +1,27 @@
 "use client";
 
-import { Baby, Bike, Briefcase, Calendar, Car, HeartPulse, Sprout, Waves } from "lucide-react";
+import { Baby, Bike, Briefcase, Calendar, Car, HeartPulse, PersonStanding, Sprout, Waves } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
+import type { TranslationKey } from "@/lib/i18n/translations";
 import type { InterestKey } from "@/lib/types";
 
 interface InterestOption {
   key: InterestKey;
-  label: string;
-  description: string;
+  labelKey: TranslationKey;
+  descriptionKey: TranslationKey;
   icon: typeof HeartPulse;
 }
 
 export const INTEREST_OPTIONS: InterestOption[] = [
-  { key: "health", label: "Health", description: "AQI, UV & comfort tracking", icon: HeartPulse },
-  { key: "outdoor_fitness", label: "Outdoor Fitness", description: "Best time to run or train", icon: Bike },
-  { key: "travel", label: "Travel", description: "Destination forecasts & packing", icon: Briefcase },
-  { key: "family", label: "Family", description: "Commute & school-day conditions", icon: Baby },
-  { key: "agriculture", label: "Agriculture", description: "Rainfall, frost & field conditions", icon: Sprout },
-  { key: "commuting", label: "Commuting", description: "Rain, wind & visibility on the go", icon: Car },
-  { key: "marine_beach", label: "Marine / Beach", description: "Waves, tides & wind", icon: Waves },
-  { key: "events", label: "Events", description: "Outdoor comfort planning", icon: Calendar },
+  { key: "health", labelKey: "interest.health", descriptionKey: "interest.health.desc", icon: HeartPulse },
+  { key: "outdoor_fitness", labelKey: "interest.outdoor_fitness", descriptionKey: "interest.outdoor_fitness.desc", icon: Bike },
+  { key: "travel", labelKey: "interest.travel", descriptionKey: "interest.travel.desc", icon: Briefcase },
+  { key: "family", labelKey: "interest.family", descriptionKey: "interest.family.desc", icon: Baby },
+  { key: "agriculture", labelKey: "interest.agriculture", descriptionKey: "interest.agriculture.desc", icon: Sprout },
+  { key: "commuting", labelKey: "interest.commuting", descriptionKey: "interest.commuting.desc", icon: Car },
+  { key: "marine_beach", labelKey: "interest.marine_beach", descriptionKey: "interest.marine_beach.desc", icon: Waves },
+  { key: "events", labelKey: "interest.events", descriptionKey: "interest.events.desc", icon: Calendar },
+  { key: "elderly", labelKey: "interest.elderly", descriptionKey: "interest.elderly.desc", icon: PersonStanding },
 ];
 
 interface InterestSelectorProps {
@@ -27,8 +30,9 @@ interface InterestSelectorProps {
 }
 
 export function InterestSelector({ selected, onToggle }: InterestSelectorProps) {
+  const { t } = useLanguage();
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
       {INTEREST_OPTIONS.map((opt) => {
         const active = selected.includes(opt.key);
         const Icon = opt.icon;
@@ -37,7 +41,7 @@ export function InterestSelector({ selected, onToggle }: InterestSelectorProps) 
             key={opt.key}
             type="button"
             onClick={() => onToggle(opt.key)}
-            className={`glass-hover flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-colors ${
+            className={`glass-hover flex min-h-[7.5rem] flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-colors ${
               active ? "border-sky-400/60 bg-sky-500/10" : "border-white/10 bg-white/[0.03]"
             }`}
           >
@@ -45,8 +49,8 @@ export function InterestSelector({ selected, onToggle }: InterestSelectorProps) 
               <Icon className={`h-5 w-5 ${active ? "text-sky-300" : "text-mist-400"}`} />
             </div>
             <div>
-              <p className={`text-sm font-medium ${active ? "text-mist-100" : "text-mist-300"}`}>{opt.label}</p>
-              <p className="text-xs text-mist-400 mt-0.5">{opt.description}</p>
+              <p className={`text-sm font-medium ${active ? "text-mist-100" : "text-mist-300"}`}>{t(opt.labelKey)}</p>
+              <p className="mt-0.5 text-xs text-mist-400">{t(opt.descriptionKey)}</p>
             </div>
           </button>
         );

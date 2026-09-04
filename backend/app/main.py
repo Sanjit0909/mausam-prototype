@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .config import settings
+from .config import get_settings, settings
 from .core.http_client import UpstreamAPIError, close_http_client
 from .routers import air_quality, ai, alerts, astronomy, forecast, historical, insights, location, marine, weather
 
@@ -49,32 +49,43 @@ async def generic_error_handler(_: Request, exc: Exception) -> JSONResponse:
 
 @app.get("/health")
 async def health() -> dict:
-    ai_mode = "deepseek" if settings.has_deepseek_key else ("gemini" if settings.has_gemini_key else "rule-based")
+    # Fresh read so /health reflects the current .env, not the import-time singleton.
+    current = get_settings()
+    ai_chain: list[str] = []
+    if current.has_deepseek_key:
+        ai_chain.append("deepseek")
+    if current.has_gemini_key:
+        ai_chain.append("gemini")
+    if current.has_openrouter_key:
+        ai_chain.append("openrouter")
+    ai_chain.append("rule-based")
+    ai_mode = ai_chain[0]
     return {
         "status": "ok",
-        "env": settings.env,
+        "env": current.env,
         "ai_mode": ai_mode,
         "providers": {
             "ai": {
                 "active_primary": ai_mode,
-                "chain": ["deepseek", "gemini", "rule-based"],
-                "deepseek_configured": settings.has_deepseek_key,
-                "gemini_configured": settings.has_gemini_key,
+                "chain": ai_chain,
+                "deepseek_configured": current.has_deepseek_key,
+                "gemini_configured": current.has_gemini_key,
+                "openrouter_configured": current.has_openrouter_key,
             },
             "weather": {
                 "chain": ["imd", "open-meteo", "openweathermap", "weatherstack"],
-                "imd_configured": settings.has_imd_key,
-                "openweathermap_configured": settings.has_owm_key,
-                "weatherstack_configured": settings.has_weatherstack_key,
+                "imd_configured": current.has_imd_key,
+                "openweathermap_configured": current.has_owm_key,
+                "weatherstack_configured": current.has_weatherstack_key,
             },
             "marine": {
                 "chain": ["incois", "open-meteo-marine", "stormglass-tides-only"],
-                "incois_configured": settings.has_incois_key,
-                "stormglass_configured": settings.has_stormglass_key,
+                "incois_configured": current.has_incois_key,
+                "stormglass_configured": current.has_stormglass_key,
             },
             "alerts": {
                 "chain": ["imd", "nws-us-only", "derived"],
-                "imd_configured": settings.has_imd_key,
+                "imd_configured": current.has_imd_key,
             },
         },
     }

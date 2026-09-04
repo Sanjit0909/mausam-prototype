@@ -1,7 +1,10 @@
-"""AI Weather Assistant: DeepSeek V4 Flash (primary) -> Gemini (fallback) -> rule-based
-(final fallback). Same context-building for all three tiers - only the model differs. The
-user never sees a raw provider error (429/500/timeout); a failure at any tier silently
-degrades to the next one, and the final rule-based tier always succeeds.
+"""AI Weather Assistant chain:
+
+    DeepSeek V4 Flash  ->  Gemini  ->  OpenRouter (openrouter/free)  ->  MAUSAM rule engine
+
+Same weather context is built once and reused at every tier. The user never sees a raw
+provider error (429/500/timeout/stack); a failure at any LLM tier silently degrades to
+the next one, and the final rule-based tier always succeeds.
 """
 import hashlib
 import logging
@@ -18,6 +21,10 @@ logger = logging.getLogger(__name__)
 # firing two expensive AI calls for the same question a few seconds apart.
 _RESPONSE_CACHE_TTL = 120
 _response_cache: dict[str, tuple[float, tuple[str, str]]] = {}
+
+_DEEPSEEK_TIMEOUT = 12.0
+_GEMINI_TIMEOUT = 12.0
+_OPENROUTER_TIMEOUT = 18.0
 
 
 def _cache_key(message: str, lat: float, lon: float, interests: list[str]) -> str:
@@ -74,30 +81,87 @@ def _system_instruction(context: str, interests: list[str]) -> str:
     )
 
 
-async def _call_deepseek(message: str, context: str, interests: list[str], history: list[ChatMessage]) -> str:
-    from openai import AsyncOpenAI
-
-    client = AsyncOpenAI(api_key=settings.deepseek_api_key, base_url=settings.deepseek_base_url, timeout=15.0)
-
+def _chat_messages(message: str, context: str, interests: list[str], history: list[ChatMessage]) -> list[dict]:
     messages = [{"role": "system", "content": _system_instruction(context, interests)}]
     for turn in history[-6:]:
         role = "user" if turn.role == "user" else "assistant"
         messages.append({"role": role, "content": turn.content})
     messages.append({"role": "user", "content": message})
+    return messages
 
+
+async def _call_openai_compatible(
+    *,
+    api_key: str,
+    base_url: str,
+    model: str,
+    message: str,
+    context: str,
+    interests: list[str],
+    history: list[ChatMessage],
+    provider_name: str,
+    timeout: float,
+    extra_headers: dict[str, str] | None = None,
+) -> str:
+    from openai import AsyncOpenAI
+
+    client = AsyncOpenAI(
+        api_key=api_key,
+        base_url=base_url,
+        timeout=timeout,
+        default_headers=extra_headers or None,
+    )
     response = await client.chat.completions.create(
-        model=settings.deepseek_model,
-        messages=messages,
+        model=model,
+        messages=_chat_messages(message, context, interests, history),
         max_tokens=400,
         temperature=0.4,
     )
     text = response.choices[0].message.content if response.choices else None
     if not text:
-        raise ValueError("Empty response from DeepSeek")
+        raise ValueError(f"Empty response from {provider_name}")
+    routed = getattr(response, "model", None)
+    if routed and routed != model:
+        logger.info("[AI] %s routed model=%s", provider_name, routed)
     return text.strip()
 
 
+async def _call_deepseek(message: str, context: str, interests: list[str], history: list[ChatMessage]) -> str:
+    return await _call_openai_compatible(
+        api_key=settings.deepseek_api_key,
+        base_url=settings.deepseek_base_url,
+        model=settings.deepseek_model,
+        message=message,
+        context=context,
+        interests=interests,
+        history=history,
+        provider_name="DeepSeek",
+        timeout=_DEEPSEEK_TIMEOUT,
+    )
+
+
+async def _call_openrouter(message: str, context: str, interests: list[str], history: list[ChatMessage]) -> str:
+    # openrouter/free auto-selects an available free model when paid/primary keys fail.
+    return await _call_openai_compatible(
+        api_key=settings.openrouter_api_key,
+        base_url=settings.openrouter_base_url,
+        model=settings.openrouter_model,
+        message=message,
+        context=context,
+        interests=interests,
+        history=history,
+        provider_name="OpenRouter",
+        timeout=_OPENROUTER_TIMEOUT,
+        extra_headers={
+            "HTTP-Referer": "https://mausam-prototype.vercel.app",
+            "X-Title": "MAUSAM",
+        },
+    )
+
+
 async def _call_gemini(message: str, context: str, history: list[ChatMessage]) -> str:
+    import asyncio
+
     from google import genai
     from google.genai import types
 
@@ -109,19 +173,22 @@ async def _call_gemini(message: str, context: str, history: list[ChatMessage]) -
         contents.append(types.Content(role=role, parts=[types.Part.from_text(text=turn.content)]))
     contents.append(types.Content(role="user", parts=[types.Part.from_text(text=message)]))
 
-    response = await client.aio.models.generate_content(
-        model=settings.gemini_model,
-        contents=contents,
-        config=types.GenerateContentConfig(
-            system_instruction=_system_instruction(context, []),
-            max_output_tokens=400,
-            thinking_config=types.ThinkingConfig(thinking_level="low"),
-        ),
-    )
-    text = getattr(response, "text", None)
-    if not text:
-        raise ValueError("Empty response from Gemini")
-    return text.strip()
+    async def _generate() -> str:
+        response = await client.aio.models.generate_content(
+            model=settings.gemini_model,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=_system_instruction(context, []),
+                max_output_tokens=400,
+                thinking_config=types.ThinkingConfig(thinking_level="low"),
+            ),
+        )
+        text = getattr(response, "text", None)
+        if not text:
+            raise ValueError("Empty response from Gemini")
+        return text.strip()
+
+    return await asyncio.wait_for(_generate(), timeout=_GEMINI_TIMEOUT)
 
 
 def _fallback_reply(
@@ -131,7 +198,7 @@ def _fallback_reply(
     air_quality: AirQualityResponse | None,
 ) -> str:
     """Keyword-driven template assistant using the same real weather context - keeps the
-    feature fully functional with no AI key configured or if both AI tiers fail."""
+    feature fully functional with no AI key configured or if every LLM tier fails."""
     current = weather.current
     lower = message.lower()
     location = weather.location.name
@@ -196,7 +263,7 @@ async def generate_reply(
     interests: list[str],
     history: list[ChatMessage],
 ) -> tuple[str, str]:
-    """Returns (reply, source) where source is 'deepseek' | 'gemini' | 'fallback'."""
+    """Returns (reply, source) where source is 'deepseek' | 'gemini' | 'openrouter' | 'fallback'."""
     cache_key = _cache_key(message, weather.location.lat, weather.location.lon, interests)
     cached = _response_cache.get(cache_key)
     if cached and time.monotonic() - cached[0] < _RESPONSE_CACHE_TTL:
@@ -204,28 +271,39 @@ async def generate_reply(
         return cached[1]
 
     context = _build_context(weather, forecast, air_quality, interests)
-    started = time.monotonic()
 
     if settings.has_deepseek_key:
+        started = time.monotonic()
         try:
             reply = await _call_deepseek(message, context, interests, history)
             logger.info("[AI] DeepSeek success %.1fs", time.monotonic() - started)
             result = (reply, "deepseek")
             _response_cache[cache_key] = (time.monotonic(), result)
             return result
-        except Exception as exc:  # noqa: BLE001 - any DeepSeek failure silently degrades to Gemini
+        except Exception as exc:  # noqa: BLE001 - any DeepSeek failure silently degrades
             logger.warning("[AI] DeepSeek failed (%.1fs) - falling back to Gemini: %s", time.monotonic() - started, repr(exc))
 
     if settings.has_gemini_key:
-        started_gemini = time.monotonic()
+        started = time.monotonic()
         try:
             reply = await _call_gemini(message, context, history)
-            logger.info("[AI] Gemini success %.1fs", time.monotonic() - started_gemini)
+            logger.info("[AI] Gemini success %.1fs", time.monotonic() - started)
             result = (reply, "gemini")
             _response_cache[cache_key] = (time.monotonic(), result)
             return result
-        except Exception:  # noqa: BLE001 - any Gemini failure silently degrades to rule-based
-            logger.warning("[AI] Gemini failed - falling back to rule-based assistant")
+        except Exception as exc:  # noqa: BLE001 - any Gemini failure silently degrades
+            logger.warning("[AI] Gemini failed (%.1fs) - falling back to OpenRouter: %s", time.monotonic() - started, repr(exc))
+
+    if settings.has_openrouter_key:
+        started = time.monotonic()
+        try:
+            reply = await _call_openrouter(message, context, interests, history)
+            logger.info("[AI] OpenRouter success %.1fs", time.monotonic() - started)
+            result = (reply, "openrouter")
+            _response_cache[cache_key] = (time.monotonic(), result)
+            return result
+        except Exception as exc:  # noqa: BLE001 - any OpenRouter failure silently degrades
+            logger.warning("[AI] OpenRouter failed (%.1fs) - falling back to rule engine: %s", time.monotonic() - started, repr(exc))
 
     reply = _fallback_reply(message, weather, forecast, air_quality)
     result = (reply, "fallback")

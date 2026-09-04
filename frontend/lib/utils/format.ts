@@ -87,3 +87,28 @@ export function severityColor(severity: string): string {
 export function locationLabel(loc: { name: string; admin1?: string | null; country?: string | null }): string {
   return [loc.name, loc.admin1, loc.country].filter(Boolean).join(", ");
 }
+
+const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
+  imd: "IMD",
+  "open-meteo": "Open-Meteo",
+  "open-meteo-marine": "Open-Meteo",
+  "open-meteo-archive": "Open-Meteo",
+  openweathermap: "OpenWeatherMap",
+  weatherstack: "Weatherstack",
+  stormglass: "Stormglass",
+  incois: "INCOIS",
+  unavailable: "Unavailable",
+  nws: "NWS",
+  derived: "MAUSAM Advisory",
+  deepseek: "DeepSeek",
+  gemini: "Gemini",
+  openrouter: "OpenRouter",
+  fallback: "MAUSAM Assistant",
+};
+
+/** Maps a backend `source` string (e.g. "open-meteo", "openweathermap") to the human-
+ * readable provider name shown in SourceBadge - never invents a provider that isn't the
+ * literal value the backend reported. */
+export function providerDisplayName(source: string): string {
+  return PROVIDER_DISPLAY_NAMES[source.toLowerCase()] ?? source;
+}

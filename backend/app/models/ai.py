@@ -18,4 +18,4 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
-    source: str  # "gemini" | "fallback"
+    source: str  # "deepseek" | "gemini" | "openrouter" | "fallback"

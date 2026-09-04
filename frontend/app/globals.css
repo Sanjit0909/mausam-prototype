@@ -49,6 +49,18 @@ body {
   min-height: 100dvh;
 }
 
+@media (max-width: 640px) {
+  html {
+    font-size: 16px;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
 /* Atmospheric layered background used behind the main app shell */
 .bg-atmospheric {
   background-color: var(--color-navy-950);

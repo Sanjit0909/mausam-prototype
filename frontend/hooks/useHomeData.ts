@@ -5,6 +5,7 @@ import { getAlerts } from "@/lib/api/alerts";
 import { getAirQuality, getAstronomy, getMarine } from "@/lib/api/environment";
 import { getInsights } from "@/lib/api/insights";
 import { getCurrentWeather, getForecast } from "@/lib/api/weather";
+import { getInteractionQueryString } from "@/hooks/useInteractionTracking";
 import type {
   AirQualityResponse,
   AlertsResponse,
@@ -60,7 +61,7 @@ export function useHomeData(lat: number, lon: number, name: string | undefined, 
         getForecast(lat, lon, 7, name, controller.signal),
         getAirQuality(lat, lon, name, controller.signal),
         getAlerts(lat, lon, name, controller.signal),
-        getInsights(lat, lon, interests, name, controller.signal),
+        getInsights(lat, lon, interests, name, controller.signal, getInteractionQueryString()),
         getAstronomy(lat, lon, name, controller.signal),
         getMarine(lat, lon, name, controller.signal),
       ]);

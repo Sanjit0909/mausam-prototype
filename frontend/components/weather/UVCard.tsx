@@ -1,12 +1,28 @@
+"use client";
+
 import { Sun } from "lucide-react";
+import { WhyThis } from "@/components/common/WhyThis";
 import { uvCategory } from "@/lib/utils/format";
 
-export function UVCard({ uvIndex }: { uvIndex: number | null | undefined }) {
+export function UVCard({
+  uvIndex,
+  reason,
+  onActivate,
+}: {
+  uvIndex: number | null | undefined;
+  reason?: string;
+  onActivate?: () => void;
+}) {
   const { label, color } = uvCategory(uvIndex);
   const pct = uvIndex !== null && uvIndex !== undefined ? Math.min(100, (uvIndex / 11) * 100) : 0;
 
   return (
-    <div className="glass glass-hover rounded-3xl p-5 flex flex-col gap-3">
+    <div
+      className="glass glass-hover flex min-h-[8.5rem] cursor-pointer flex-col gap-3 rounded-3xl p-4 sm:p-5"
+      onClick={onActivate}
+      role={onActivate ? "button" : undefined}
+      tabIndex={onActivate ? 0 : undefined}
+    >
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium uppercase tracking-wide text-mist-400">UV Index</span>
         <Sun className={`h-4 w-4 ${color}`} />
@@ -18,6 +34,7 @@ export function UVCard({ uvIndex }: { uvIndex: number | null | undefined }) {
       <div className="h-1.5 w-full rounded-full bg-white/5">
         <div className={`h-1.5 rounded-full ${color.replace("text-", "bg-")}`} style={{ width: `${pct}%` }} />
       </div>
+      {reason && <WhyThis reason={reason} />}
     </div>
   );
 }

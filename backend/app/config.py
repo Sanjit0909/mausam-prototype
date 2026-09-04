@@ -1,5 +1,4 @@
 """Application configuration loaded from environment variables / backend/.env."""
-from functools import lru_cache
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -16,6 +15,10 @@ class Settings(BaseSettings):
     deepseek_api_key: str = ""
     deepseek_model: str = "deepseek-v4-flash"
     deepseek_base_url: str = "https://api.deepseek.com"
+
+    openrouter_api_key: str = ""
+    openrouter_model: str = "openrouter/free"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     openweathermap_api_key: str = ""
     weatherstack_api_key: str = ""
@@ -52,6 +55,10 @@ class Settings(BaseSettings):
         return bool(self.deepseek_api_key.strip())
 
     @property
+    def has_openrouter_key(self) -> bool:
+        return bool(self.openrouter_api_key.strip())
+
+    @property
     def has_weatherstack_key(self) -> bool:
         return bool(self.weatherstack_api_key.strip())
 
@@ -68,8 +75,12 @@ class Settings(BaseSettings):
         return bool(self.incois_api_key.strip())
 
 
-@lru_cache
 def get_settings() -> Settings:
+    """Read settings from the environment / .env on every call.
+
+    Do not cache this. A cached Settings object is why a long-lived uvicorn
+    process can keep reporting an outdated AI chain after OPENROUTER_* is added.
+    """
     return Settings()
 
 
