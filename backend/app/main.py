@@ -49,7 +49,35 @@ async def generic_error_handler(_: Request, exc: Exception) -> JSONResponse:
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok", "env": settings.env, "ai_mode": "gemini" if settings.has_gemini_key else "fallback"}
+    ai_mode = "deepseek" if settings.has_deepseek_key else ("gemini" if settings.has_gemini_key else "rule-based")
+    return {
+        "status": "ok",
+        "env": settings.env,
+        "ai_mode": ai_mode,
+        "providers": {
+            "ai": {
+                "active_primary": ai_mode,
+                "chain": ["deepseek", "gemini", "rule-based"],
+                "deepseek_configured": settings.has_deepseek_key,
+                "gemini_configured": settings.has_gemini_key,
+            },
+            "weather": {
+                "chain": ["imd", "open-meteo", "openweathermap", "weatherstack"],
+                "imd_configured": settings.has_imd_key,
+                "openweathermap_configured": settings.has_owm_key,
+                "weatherstack_configured": settings.has_weatherstack_key,
+            },
+            "marine": {
+                "chain": ["incois", "open-meteo-marine", "stormglass-tides-only"],
+                "incois_configured": settings.has_incois_key,
+                "stormglass_configured": settings.has_stormglass_key,
+            },
+            "alerts": {
+                "chain": ["imd", "nws-us-only", "derived"],
+                "imd_configured": settings.has_imd_key,
+            },
+        },
+    }
 
 
 app.include_router(weather.router)

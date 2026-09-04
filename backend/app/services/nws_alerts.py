@@ -49,8 +49,11 @@ async def fetch_nws_alerts(lat: float, lon: float) -> list[WeatherAlert]:
                 description=(props.get("description") or "")[:500],
                 severity=_SEVERITY_MAP.get(props.get("severity", "Unknown"), "minor"),
                 alert_type="storm",
-                source="official",
+                source="NWS",
+                provider_label="NWS - Official Alert",
+                area=props.get("areaDesc"),
                 issued_at=props.get("sent", ""),
+                updated_at=props.get("effective") or props.get("sent", ""),
             )
         )
     return alerts

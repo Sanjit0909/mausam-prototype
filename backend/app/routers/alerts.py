@@ -2,10 +2,10 @@ import asyncio
 
 from fastapi import APIRouter, Query
 
-from ..models.alerts import AlertsResponse
+from ..models.alerts import AlertsResponse, has_severe_alert
 from ..services.air_quality import get_air_quality
 from ..services.alerts_engine import generate_derived_alerts
-from ..services.nws_alerts import fetch_nws_alerts
+from ..services.alerts_provider import get_official_alerts
 from ..services.weather_provider import get_current_weather, get_forecast
 
 router = APIRouter(prefix="/api/alerts", tags=["alerts"])
@@ -22,7 +22,7 @@ async def get_alerts(
         get_current_weather(lat, lon, name),
         get_forecast(lat, lon, days=1, name=name),
         get_air_quality(lat, lon, name),
-        fetch_nws_alerts(lat, lon),
+        get_official_alerts(lat, lon),
         return_exceptions=True,
     )
 
@@ -35,4 +35,9 @@ async def get_alerts(
 
     derived = generate_derived_alerts(weather_result, forecast, air_quality)
 
-    return AlertsResponse(location_name=weather_result.location.name, alerts=official_alerts + derived)
+    # Safety override (spec section 11): official warnings always precede derived advisories,
+    # and any severe/extreme alert sets has_severe so the frontend can never let
+    # personalization bury it.
+    all_alerts = official_alerts + derived
+
+    return AlertsResponse(location_name=weather_result.location.name, alerts=all_alerts, has_severe=has_severe_alert(all_alerts))

@@ -1,11 +1,11 @@
-"""AI Weather Assistant: Gemini-backed with an automatic rule-based fallback.
-
-If GEMINI_API_KEY is missing, or the live call fails (bad key, rate limit, network issue),
-generate_reply() transparently degrades to a template-based answer built from the same real
-weather context - the assistant always works, and silently upgrades the moment a valid key
-is available. The frontend is told which mode produced the answer via the `source` field.
+"""AI Weather Assistant: DeepSeek V4 Flash (primary) -> Gemini (fallback) -> rule-based
+(final fallback). Same context-building for all three tiers - only the model differs. The
+user never sees a raw provider error (429/500/timeout); a failure at any tier silently
+degrades to the next one, and the final rule-based tier always succeeds.
 """
+import hashlib
 import logging
+import time
 
 from ..config import settings
 from ..models.ai import ChatMessage
@@ -13,6 +13,16 @@ from ..models.environment import AirQualityResponse
 from ..models.weather import ForecastResponse, WeatherResponse
 
 logger = logging.getLogger(__name__)
+
+# Short-lived response cache: guards against double-submits / accidental duplicate requests
+# firing two expensive AI calls for the same question a few seconds apart.
+_RESPONSE_CACHE_TTL = 120
+_response_cache: dict[str, tuple[float, tuple[str, str]]] = {}
+
+
+def _cache_key(message: str, lat: float, lon: float, interests: list[str]) -> str:
+    raw = f"{message.strip().lower()}|{lat:.2f}|{lon:.2f}|{','.join(sorted(interests))}"
+    return hashlib.sha256(raw.encode()).hexdigest()
 
 
 def _build_context(
@@ -55,18 +65,43 @@ def _build_context(
     return "\n".join(lines)
 
 
-async def _call_gemini(message: str, context: str, history: list[ChatMessage]) -> str:
-    from google import genai
-    from google.genai import types
-
-    client = genai.Client(api_key=settings.gemini_api_key)
-
-    system_instruction = (
+def _system_instruction(context: str, interests: list[str]) -> str:
+    return (
         "You are MAUSAM's AI weather assistant. Answer using ONLY the real weather context "
         "below - never invent numbers that contradict it. Be concise (2-4 sentences), "
         "practical, and specific. Tailor advice to the user's stated interests when relevant.\n\n"
         f"Weather context:\n{context}"
     )
+
+
+async def _call_deepseek(message: str, context: str, interests: list[str], history: list[ChatMessage]) -> str:
+    from openai import AsyncOpenAI
+
+    client = AsyncOpenAI(api_key=settings.deepseek_api_key, base_url=settings.deepseek_base_url, timeout=15.0)
+
+    messages = [{"role": "system", "content": _system_instruction(context, interests)}]
+    for turn in history[-6:]:
+        role = "user" if turn.role == "user" else "assistant"
+        messages.append({"role": role, "content": turn.content})
+    messages.append({"role": "user", "content": message})
+
+    response = await client.chat.completions.create(
+        model=settings.deepseek_model,
+        messages=messages,
+        max_tokens=400,
+        temperature=0.4,
+    )
+    text = response.choices[0].message.content if response.choices else None
+    if not text:
+        raise ValueError("Empty response from DeepSeek")
+    return text.strip()
+
+
+async def _call_gemini(message: str, context: str, history: list[ChatMessage]) -> str:
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=settings.gemini_api_key)
 
     contents = []
     for turn in history[-6:]:
@@ -78,10 +113,8 @@ async def _call_gemini(message: str, context: str, history: list[ChatMessage]) -
         model=settings.gemini_model,
         contents=contents,
         config=types.GenerateContentConfig(
-            system_instruction=system_instruction,
+            system_instruction=_system_instruction(context, []),
             max_output_tokens=400,
-            # Quick weather Q&A doesn't need deep multi-step reasoning - lower thinking
-            # level trades a bit of depth for noticeably faster responses.
             thinking_config=types.ThinkingConfig(thinking_level="low"),
         ),
     )
@@ -98,7 +131,7 @@ def _fallback_reply(
     air_quality: AirQualityResponse | None,
 ) -> str:
     """Keyword-driven template assistant using the same real weather context - keeps the
-    feature fully functional with no AI key configured."""
+    feature fully functional with no AI key configured or if both AI tiers fail."""
     current = weather.current
     lower = message.lower()
     location = weather.location.name
@@ -132,6 +165,13 @@ def _fallback_reply(
         packing = ", ".join(items) if items else "no special weather gear — conditions look mild"
         return f"For {location}: {current.temperature:.0f}\u00b0C and {current.condition.lower()}. Consider packing {packing}."
 
+    if any(k in lower for k in ["safe", "outside", "go out"]):
+        aqi_note = f" Air quality is {air_quality.category.lower()}." if air_quality and air_quality.us_aqi else ""
+        heat_note = " It's quite hot — stay hydrated." if current.temperature >= 35 else ""
+        return f"Right now in {location}: {current.temperature:.0f}\u00b0C, {current.condition.lower()}.{aqi_note}{heat_note} " + (
+            "Generally fine to go outside with normal precautions." if not (air_quality and (air_quality.us_aqi or 0) > 150) else "Consider limiting time outdoors."
+        )
+
     if any(k in lower for k in ["event", "party", "wedding", "gathering", "outdoor plan"]):
         comfortable = 18 <= current.feels_like <= 30 and current.condition_group in ("clear", "cloudy")
         if comfortable and not rain_soon:
@@ -156,14 +196,38 @@ async def generate_reply(
     interests: list[str],
     history: list[ChatMessage],
 ) -> tuple[str, str]:
-    """Returns (reply, source) where source is 'gemini' or 'fallback'."""
-    if settings.has_gemini_key:
+    """Returns (reply, source) where source is 'deepseek' | 'gemini' | 'fallback'."""
+    cache_key = _cache_key(message, weather.location.lat, weather.location.lon, interests)
+    cached = _response_cache.get(cache_key)
+    if cached and time.monotonic() - cached[0] < _RESPONSE_CACHE_TTL:
+        logger.info("[AI] Duplicate request within %ds - serving cached reply", _RESPONSE_CACHE_TTL)
+        return cached[1]
+
+    context = _build_context(weather, forecast, air_quality, interests)
+    started = time.monotonic()
+
+    if settings.has_deepseek_key:
         try:
-            context = _build_context(weather, forecast, air_quality, interests)
+            reply = await _call_deepseek(message, context, interests, history)
+            logger.info("[AI] DeepSeek success %.1fs", time.monotonic() - started)
+            result = (reply, "deepseek")
+            _response_cache[cache_key] = (time.monotonic(), result)
+            return result
+        except Exception as exc:  # noqa: BLE001 - any DeepSeek failure silently degrades to Gemini
+            logger.warning("[AI] DeepSeek failed (%.1fs) - falling back to Gemini: %s", time.monotonic() - started, repr(exc))
+
+    if settings.has_gemini_key:
+        started_gemini = time.monotonic()
+        try:
             reply = await _call_gemini(message, context, history)
-            return reply, "gemini"
-        except Exception:  # noqa: BLE001 - any Gemini failure silently degrades to fallback
-            logger.exception("Gemini call failed; using fallback assistant")
+            logger.info("[AI] Gemini success %.1fs", time.monotonic() - started_gemini)
+            result = (reply, "gemini")
+            _response_cache[cache_key] = (time.monotonic(), result)
+            return result
+        except Exception:  # noqa: BLE001 - any Gemini failure silently degrades to rule-based
+            logger.warning("[AI] Gemini failed - falling back to rule-based assistant")
 
     reply = _fallback_reply(message, weather, forecast, air_quality)
-    return reply, "fallback"
+    result = (reply, "fallback")
+    _response_cache[cache_key] = (time.monotonic(), result)
+    return result

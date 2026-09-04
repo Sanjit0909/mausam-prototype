@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query
 
 from ..models.environment import MarineResponse
-from ..services.marine import get_marine
+from ..services.marine_provider import get_marine
 
 router = APIRouter(prefix="/api/marine", tags=["marine"])
 
