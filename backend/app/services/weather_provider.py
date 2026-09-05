@@ -23,8 +23,14 @@ async def get_current_weather(lat: float, lon: float, name: str | None = None) -
             result = await imd.get_current_weather(lat, lon, name)
             logger.info("[Weather] IMD success (%.2fs)", time.monotonic() - started)
             return result
-        except Exception:  # noqa: BLE001
-            logger.info("[Weather] IMD unavailable; falling back to Open-Meteo")
+        except Exception as exc:  # noqa: BLE001
+            # Safe diagnostics only - never log headers/keys/.env.
+            detail = getattr(exc, "message", None) or str(exc)
+            logger.info(
+                "[Weather] IMD unavailable (%s: %s); falling back to Open-Meteo",
+                type(exc).__name__,
+                detail,
+            )
 
     try:
         return await open_meteo.get_current_weather(lat, lon, name)

@@ -27,6 +27,8 @@ class Settings(BaseSettings):
 
     imd_api_key: str = ""
     imd_base_url: str = "https://api.imd.gov.in/api/v1"
+    # Official portal keys are typically sent as X-API-KEY; override only if IMD portal says otherwise.
+    imd_auth_header: str = "X-API-KEY"
 
     incois_api_key: str = ""
 
