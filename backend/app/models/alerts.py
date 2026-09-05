@@ -18,6 +18,12 @@ class AlertsResponse(BaseModel):
     location_name: str
     alerts: list[WeatherAlert]
     has_severe: bool = False  # safety-override flag: true if any alert is severe/extreme
+    # IMD district-warning provenance (optional; ignored by older clients).
+    # Distinguishes API failure / unmapped district from "IMD says no active warning".
+    imd_status: str | None = None  # not_configured | unavailable | unmapped_district | ok_no_active | ok
+    imd_district: str | None = None
+    imd_district_id: str | None = None
+    imd_state: str | None = None
 
 
 _SEVERE_LEVELS = {"severe", "extreme"}

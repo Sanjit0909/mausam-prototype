@@ -6,7 +6,7 @@ from ..models.alerts import AlertsResponse, has_severe_alert
 from ..models.personalization import HomeResponse
 from ..services.air_quality import get_air_quality
 from ..services.alerts_engine import generate_derived_alerts
-from ..services.alerts_provider import get_official_alerts
+from ..services.alerts_provider import get_official_alerts_bundle
 from ..services.astronomy import get_astronomy
 from ..services.marine_provider import get_marine
 from ..services.recommendation_engine import build_insights_response
@@ -43,7 +43,7 @@ async def get_home(
         get_current_weather(lat, lon, name),
         get_forecast(lat, lon, days=7, name=name),
         get_air_quality(lat, lon, name),
-        get_official_alerts(lat, lon),
+        get_official_alerts_bundle(lat, lon),
         get_marine(lat, lon, name),
         get_astronomy(lat, lon, name),
         return_exceptions=True,
@@ -54,7 +54,11 @@ async def get_home(
 
     forecast = None if isinstance(forecast_result, BaseException) else forecast_result
     air_quality = None if isinstance(air_quality_result, BaseException) else air_quality_result
-    official_alerts = [] if isinstance(official_result, BaseException) else official_result
+    official_alerts = []
+    imd_meta = None
+    if not isinstance(official_result, BaseException):
+        official_alerts = official_result.alerts
+        imd_meta = official_result.imd
     marine = None if isinstance(marine_result, BaseException) else marine_result
     astronomy = None if isinstance(astronomy_result, BaseException) else astronomy_result
 
@@ -76,6 +80,10 @@ async def get_home(
         location_name=weather_result.location.name,
         alerts=all_alerts,
         has_severe=has_severe,
+        imd_status=imd_meta.status if imd_meta else None,
+        imd_district=imd_meta.district_name if imd_meta else None,
+        imd_district_id=imd_meta.district_id if imd_meta else None,
+        imd_state=imd_meta.state if imd_meta else None,
     )
 
     return HomeResponse(

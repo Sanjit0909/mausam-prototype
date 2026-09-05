@@ -515,13 +515,8 @@ async def get_current_weather(lat: float, lon: float, name: str | None = None) -
 
 
 async def get_district_warnings(lat: float, lon: float) -> list[WeatherAlert]:
-    """District warnings require district Obj_id mapping; not invented here."""
-    if not is_configured():
-        logger.info("[Alerts] IMD unavailable (credentials not configured)")
-        return []
-    logger.info(
-        "[Alerts] IMD districtwarning not mapped for lat=%.4f lon=%.4f; skipping official IMD alerts",
-        lat,
-        lon,
-    )
-    return []
+    """Official IMD district warnings + nowcast via catalog-matched Obj_id (never invented)."""
+    from .imd_districts import fetch_district_alerts
+
+    result = await fetch_district_alerts(lat, lon)
+    return result.alerts
