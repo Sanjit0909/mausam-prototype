@@ -126,6 +126,43 @@ def _normalize_name(name: str) -> str:
     return " ".join(n.split())
 
 
+# Spelling / naming variants seen between reverse-geocoders and IMD catalog rows.
+# Applied as whole-token or substring substitutions before compact matching.
+# Never invents Obj_id — only helps equate equivalent names.
+_SPELLING_ALIASES: tuple[tuple[re.Pattern[str], str], ...] = (
+    # Official IMD catalog uses GAUTAMBUDHNAGAR; geocoders often return "Gautam Buddha Nagar".
+    (re.compile(r"BUDDHA"), "BUDH"),
+    (re.compile(r"BUDDH"), "BUDH"),
+    (re.compile(r"\bGURUGRAM\b"), "GURGAON"),
+    (re.compile(r"SHAHR\b"), "SAHAR"),  # Bulandshahr → BULANDSAHAR (IMD form)
+    (re.compile(r"SHAHAR\b"), "SAHAR"),
+)
+
+
+def _apply_spelling_aliases(normalized: str) -> str:
+    s = normalized
+    for pattern, repl in _SPELLING_ALIASES:
+        s = pattern.sub(repl, s)
+    return " ".join(s.split())
+
+
+def _match_key(name: str) -> str:
+    """Compact canonical key: aliases applied, then all whitespace removed.
+
+    Equates "Gautam Buddha Nagar" with IMD catalog "GAUTAMBUDHNAGAR", and
+    "NEW DELHI" with "NEWDELHI", without inventing IDs.
+    """
+    return re.sub(r"\s+", "", _apply_spelling_aliases(_normalize_name(name)))
+
+
+def _filter_by_state(entries: list[dict[str, str]], normalized_state: str) -> list[dict[str, str]]:
+    """Prefer state matches when catalog rows carry state; otherwise leave entries unchanged."""
+    if not normalized_state or not entries:
+        return entries
+    by_state = [e for e in entries if normalized_state in _normalize_name(e.get("state") or "")]
+    return by_state if by_state else entries
+
+
 def _district_id_from_row(row: dict[str, Any]) -> str | None:
     value = _pick(row, "Obj_id", "Obj_Id", "OBJ_ID", "obj_id", "id", "Id", "ID")
     if value is None:
@@ -203,29 +240,49 @@ def match_district_in_catalog(
         target = _normalize_name(raw)
         if not target:
             continue
+        target_key = _match_key(raw)
+
+        # 1) Exact spaced normalize
         exact = [e for e in catalog if _normalize_name(e["name"]) == target]
-        if normalized_state and len(exact) > 1:
-            by_state = [e for e in exact if normalized_state in _normalize_name(e.get("state") or "")]
-            if by_state:
-                exact = by_state
+        if len(exact) > 1:
+            exact = _filter_by_state(exact, normalized_state)
         if len(exact) == 1:
             return exact[0]
         if len(exact) > 1 and not normalized_state:
-            # Ambiguous without state — do not guess.
             return None
 
-        # Soft contains match (e.g. "Gautam Buddha Nagar" vs "GAUTAM BUDDHA NAGAR")
+        # 2) Compact + spelling-alias key (handles GAUTAMBUDHNAGAR vs "Gautam Buddha Nagar")
+        compact = [e for e in catalog if _match_key(e["name"]) == target_key]
+        if len(compact) > 1:
+            compact = _filter_by_state(compact, normalized_state)
+        if len(compact) == 1:
+            return compact[0]
+        if len(compact) > 1 and not normalized_state:
+            return None
+
+        # 3) Soft contains on normalized spaced names
         soft = [
             e
             for e in catalog
             if target in _normalize_name(e["name"]) or _normalize_name(e["name"]) in target
         ]
-        if normalized_state and soft:
-            soft_state = [e for e in soft if normalized_state in _normalize_name(e.get("state") or "")]
-            if soft_state:
-                soft = soft_state
+        soft = _filter_by_state(soft, normalized_state)
         if len(soft) == 1:
             return soft[0]
+
+        # 4) Soft contains on compact keys (unique-only; never invent)
+        soft_key = [
+            e
+            for e in catalog
+            if target_key
+            and (
+                target_key in _match_key(e["name"])
+                or _match_key(e["name"]) in target_key
+            )
+        ]
+        soft_key = _filter_by_state(soft_key, normalized_state)
+        if len(soft_key) == 1:
+            return soft_key[0]
     return None
 
 

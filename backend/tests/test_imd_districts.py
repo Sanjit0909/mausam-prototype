@@ -62,6 +62,95 @@ def test_match_district_exact_and_normalized():
     assert districts.match_district_in_catalog(catalog, "NEW DELHI DISTRICT")["id"] == "101"
 
 
+def test_match_delhi_still_works_with_live_catalog_naming():
+    """Regression: Delhi live test lat/lon mapped to NEW DELHI Obj_id 689."""
+    catalog = [
+        {"id": "689", "name": "NEW DELHI", "state": ""},
+        {"id": "488", "name": "GAUTAMBUDHNAGAR", "state": ""},
+        {"id": "501", "name": "GHAZIABAD", "state": ""},
+    ]
+    hit = districts.match_district_in_catalog(catalog, "New Delhi", state_name="Delhi")
+    assert hit is not None
+    assert hit["id"] == "689"
+    assert hit["name"] == "NEW DELHI"
+
+
+def test_match_gautam_buddha_nagar_against_imd_catalog_form():
+    """Official IMD catalog naming discovered via district-warnings product: GAUTAMBUDHNAGAR / Obj_id 488."""
+    catalog = [
+        {"id": "689", "name": "NEW DELHI", "state": ""},
+        {"id": "488", "name": "GAUTAMBUDHNAGAR", "state": ""},
+        {"id": "501", "name": "GHAZIABAD", "state": ""},
+        {"id": "490", "name": "BULANDSAHAR", "state": ""},
+    ]
+    # Reverse-geocode form from Greater Noida live test
+    hit = districts.match_district_in_catalog(
+        catalog,
+        "Gautam Buddha Nagar",
+        state_name="Uttar Pradesh",
+    )
+    assert hit is not None
+    assert hit["id"] == "488"
+    assert hit["name"] == "GAUTAMBUDHNAGAR"
+    assert districts._match_key("Gautam Buddha Nagar") == "GAUTAMBUDHNAGAR"
+    assert districts._match_key("GAUTAMBUDHNAGAR") == "GAUTAMBUDHNAGAR"
+
+
+@pytest.mark.asyncio
+async def test_greater_noida_coordinates_resolve_gautam_budh_nagar(monkeypatch):
+    """Regression: lat=28.4744, lon=77.5040 must map after catalog match (not unmapped_district)."""
+
+    async def fake_catalog():
+        return [
+            {"id": "689", "name": "NEW DELHI", "state": ""},
+            {"id": "488", "name": "GAUTAMBUDHNAGAR", "state": ""},
+        ]
+
+    async def fake_place(lat, lon):
+        assert round(lat, 4) == 28.4744
+        assert round(lon, 4) == 77.5040
+        return {
+            "district": "Gautam Buddha Nagar",
+            "state": "Uttar Pradesh",
+            "city": "Greater Noida",
+            "country": "India",
+        }
+
+    async def ok_get(path, params=None):
+        assert params == {"id": "488"}
+        if path == "districtwarning":
+            return [
+                {
+                    "Obj_id": "488",
+                    "District": "GAUTAMBUDHNAGAR",
+                    "Date": "2026-09-05",
+                    "Day_1": "1",
+                    "Day1_Color": "4",
+                    "Day_2": "1",
+                    "Day2_Color": "4",
+                    "Day_3": "1",
+                    "Day3_Color": "4",
+                    "Day_4": "1",
+                    "Day4_Color": "4",
+                    "Day_5": "1",
+                    "Day5_Color": "4",
+                }
+            ]
+        if path == "districtnowcast":
+            return [{"Station": "GAUTAMBUDHNAGAR", "color": "1", "message": "No Weather", "Date": "2026-09-05"}]
+        raise AssertionError(path)
+
+    monkeypatch.setattr(districts, "_load_district_catalog", fake_catalog)
+    monkeypatch.setattr(districts.geocoding, "resolve_india_district", fake_place)
+    monkeypatch.setattr(districts, "_imd_get", ok_get)
+
+    result = await districts.fetch_district_alerts(28.4744, 77.5040)
+    assert result.status == "ok_no_active"
+    assert result.district_id == "488"
+    assert result.district_name == "GAUTAMBUDHNAGAR"
+    assert result.alerts == []
+
+
 def test_match_district_uses_state_disambiguation():
     catalog = [
         {"id": "1", "name": "AURANGABAD", "state": "MAHARASHTRA"},
