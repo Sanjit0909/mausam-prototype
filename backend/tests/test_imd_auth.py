@@ -171,10 +171,135 @@ def test_nearest_station_selection_haversine():
     assert imd._haversine_km(lat, lon, best["lat"], best["lon"]) < imd._MAX_STATION_DISTANCE_KM
 
 
+def test_build_verified_stations_skips_forecast_only_noida_apmc():
+    forecast = [
+        {
+            "Station_Code": "100559",
+            "Station_Name": "NOIDA APMC",
+            "Latitude": "28.53333333",
+            "Longitude": "77.41666666",
+        },
+        {
+            "Station_Code": "42182",
+            "Station_Name": "New Delhi-Safdarjung",
+            "Latitude": "28.58",
+            "Longitude": "77.20",
+        },
+        {
+            "Station_Code": "42181",
+            "Station_Name": "New Delhi-Palam",
+            "Latitude": "28.57",
+            "Longitude": "77.12",
+        },
+    ]
+    current_wx = [
+        {"Station Id": "42182", "Station": "New Delhi-Safdarjung", "Temperature": "30"},
+        {"Station Id": "42181", "Station": "New Delhi-Palam", "Temperature": "31"},
+    ]
+    verified = imd.build_verified_observation_stations(forecast, current_wx)
+    ids = {s["id"] for s in verified}
+    assert "100559" not in ids
+    assert "42182" in ids
+    assert "42181" in ids
+
+
+def test_greater_noida_resolves_to_safdarjung_not_noida_apmc():
+    forecast = [
+        {
+            "Station_Code": "100559",
+            "Station_Name": "NOIDA APMC",
+            "Latitude": "28.53333333",
+            "Longitude": "77.41666666",
+        },
+        {
+            "Station_Code": "42182",
+            "Station_Name": "New Delhi-Safdarjung",
+            "Latitude": "28.58",
+            "Longitude": "77.20",
+        },
+        {
+            "Station_Code": "42184",
+            "Station_Name": "New Delhi-Ridge",
+            "Latitude": "28.60",
+            "Longitude": "77.20",
+        },
+        {
+            "Station_Code": "42180",
+            "Station_Name": "New Delhi-Ayanagar",
+            "Latitude": "28.48",
+            "Longitude": "77.12",
+        },
+        {
+            "Station_Code": "42181",
+            "Station_Name": "New Delhi-Palam",
+            "Latitude": "28.57",
+            "Longitude": "77.12",
+        },
+    ]
+    current_wx = [
+        {"Station Id": "42182", "Station": "New Delhi-Safdarjung"},
+        {"Station Id": "42184", "Station": "New Delhi-Ridge"},
+        {"Station Id": "42180", "Station": "New Delhi-Ayanagar"},
+        {"Station Id": "42181", "Station": "New Delhi-Palam"},
+    ]
+    verified = imd.build_verified_observation_stations(forecast, current_wx)
+    lat, lon = 28.4744, 77.5040
+    best = min(verified, key=lambda s: imd._haversine_km(lat, lon, s["lat"], s["lon"]))
+    assert best["id"] == "42182"
+    assert "Safdarjung" in best["name"]
+    dist = imd._haversine_km(lat, lon, best["lat"], best["lon"])
+    assert 30.0 < dist < 35.0
+
+
+@pytest.mark.asyncio
+async def test_get_current_weather_uses_verified_station_id(monkeypatch):
+    async def fake_verified(lat, lon):
+        return {
+            "id": "42182",
+            "name": "New Delhi-Safdarjung",
+            "lat": 28.58,
+            "lon": 77.20,
+            "distance_km": 31.936,
+            "forecast_code": "42182",
+        }
+
+    async def fake_imd_get(path, params=None):
+        assert path == "current_wx"
+        assert params == {"id": "42182"}
+        return [
+            {
+                "Station Id": "42182",
+                "Station": "New Delhi-Safdarjung",
+                "Temperature": "29.1",
+                "Humidity": "70",
+                "Wind Speed": "8",
+                "Wind Direction": "90",
+                "M.S.L.P": "1005",
+                "Weather Code": "02",
+                "Last 24 hrs Rainfall": "0",
+                "Date of Observation": "2026-09-05",
+                "Time of Observation": "12:00",
+            }
+        ]
+
+    monkeypatch.setattr(imd, "_nearest_verified_station", fake_verified)
+    monkeypatch.setattr(imd, "_imd_get", fake_imd_get)
+    imd._obs_cache._store.clear()
+
+    result = await imd.get_current_weather(28.4744, 77.5040, "Greater Noida")
+    assert result.source == "imd"
+    assert result.location.name == "Greater Noida"
+    assert result.observation_station == "New Delhi-Safdarjung"
+    assert result.observation_station_id == "42182"
+    assert result.station_distance_km == 31.936
+    assert result.provider_label == "IMD – Official Current Weather"
+    assert result.current.temperature == 29.1
+
+
 def test_normalize_current_weather_response_contract():
     row = {
         "Station Id": "42182",
-        "Station": "DELHI",
+        "Station": "New Delhi-Safdarjung",
         "Temperature": "32.5",
         "Humidity": "41",
         "Wind Speed": "12",
@@ -185,12 +310,22 @@ def test_normalize_current_weather_response_contract():
         "Date of Observation": "2026-09-05",
         "Time of Observation": "12:00",
     }
-    result = imd._normalize_current(row, 28.47, 77.50, "Greater Noida", "DELHI")
+    result = imd._normalize_current(
+        row,
+        28.47,
+        77.50,
+        "Greater Noida",
+        "New Delhi-Safdarjung",
+        station_id="42182",
+        station_distance_km=31.936,
+    )
     assert result.source == "imd"
     assert result.is_demo is False
     assert result.current.temperature == 32.5
     assert result.current.condition_group == "rain"
     assert result.location.name == "Greater Noida"
+    assert result.observation_station == "New Delhi-Safdarjung"
+    assert result.observation_station_id == "42182"
 
 
 def test_redact_strips_secrets_from_logs():
