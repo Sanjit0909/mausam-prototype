@@ -1,5 +1,8 @@
+"use client";
+
 import { Droplets } from "lucide-react";
 import { WeatherIcon } from "@/components/weather/WeatherIcon";
+import { useLanguage } from "@/context/LanguageContext";
 import { formatDayLabel, formatPercent, formatTemp } from "@/lib/utils/format";
 import type { DailyPoint } from "@/lib/types";
 
@@ -8,20 +11,23 @@ interface DailyForecastProps {
 }
 
 export function DailyForecast({ daily }: DailyForecastProps) {
+  const { t, locale } = useLanguage();
   const maxTemp = Math.max(...daily.map((d) => d.temp_max));
   const minTemp = Math.min(...daily.map((d) => d.temp_min));
   const range = Math.max(maxTemp - minTemp, 1);
 
   return (
     <div className="glass rounded-3xl p-6">
-      <h3 className="text-sm font-semibold text-mist-200 mb-4">{daily.length}-Day Forecast</h3>
+      <h3 className="mb-4 text-sm font-semibold text-mist-200">{t("home.daily", { count: daily.length })}</h3>
       <div className="flex flex-col divide-y divide-white/5">
         {daily.map((day, i) => {
           const leftPct = ((day.temp_min - minTemp) / range) * 100;
           const widthPct = ((day.temp_max - day.temp_min) / range) * 100;
+          const dayLabel =
+            i === 0 ? t("home.today") : i === 1 ? t("home.tomorrow") : formatDayLabel(day.date, i, locale);
           return (
             <div key={day.date} className="flex items-center gap-3 py-3 text-sm">
-              <span className="w-16 shrink-0 text-mist-300">{formatDayLabel(day.date, i)}</span>
+              <span className="w-16 shrink-0 text-mist-300">{dayLabel}</span>
               <WeatherIcon group={day.condition_group} className="h-5 w-5 shrink-0 text-sky-300" />
               {(day.precipitation_probability_max || 0) > 0 ? (
                 <span className="flex w-12 shrink-0 items-center gap-0.5 text-[11px] text-sky-400">

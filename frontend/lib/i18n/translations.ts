@@ -6,9 +6,75 @@ export const TRANSLATIONS = {
     "nav.explore": "Explore",
     "nav.alerts": "Alerts",
     "nav.assistant": "Assistant",
-    "nav.profile": "Profile & Preferences",
+    "nav.profile": "Profile",
+    "nav.profileFull": "Profile & Preferences",
     "nav.signOut": "Sign out",
     "nav.language": "Language",
+    "nav.menu": "Menu",
+    "nav.profileMenu": "Profile menu",
+    "nav.logIn": "Log In",
+    "nav.getStarted": "Get Started",
+
+    "landing.badge": "Personalised weather intelligence",
+    "landing.heroBefore": "Weather that adapts to",
+    "landing.heroHighlight": "who you are",
+    "landing.subtitle":
+      "MAUSAM builds one homepage that reprioritizes real-time weather, alerts, and insights around your interests - fitness, travel, family, agriculture, and more.",
+    "landing.ctaPrimary": "Build My Homepage",
+    "landing.ctaSecondary": "I already have an account",
+    "landing.personasTitle": "The same homepage, reshaped for every kind of user",
+    "landing.persona.fitness": "Outdoor Fitness",
+    "landing.persona.fitness.detail": "Best time to run, UV & AQI aware",
+    "landing.persona.travel": "Travel",
+    "landing.persona.travel.detail": "Destination forecasts & packing tips",
+    "landing.persona.health": "Health",
+    "landing.persona.health.detail": "AQI, UV and comfort tracking",
+    "landing.persona.agri": "Agriculture",
+    "landing.persona.agri.detail": "Rainfall, frost & field conditions",
+    "landing.persona.marine": "Marine / Beach",
+    "landing.persona.marine.detail": "Waves, wind & tide outlook",
+    "landing.feature.personal.title": "One homepage, personalised to you",
+    "landing.feature.personal.desc":
+      "Select your interests once - MAUSAM reprioritizes every card, insight, and recommendation around what actually matters to you.",
+    "landing.feature.live.title": "Real, live weather data",
+    "landing.feature.live.desc":
+      "Current conditions, hourly & multi-day forecasts, AQI, UV, and marine data sourced live - never fabricated.",
+    "landing.feature.ai.title": "AI weather assistant",
+    "landing.feature.ai.desc":
+      "Ask natural questions like “Should I run today?” and get answers grounded in your real local forecast.",
+    "landing.feature.alerts.title": "Alerts that matter",
+    "landing.feature.alerts.desc":
+      "Severe weather, heat, air quality, and rain advisories surfaced with clear severity and context.",
+    "landing.footer": "Built for Smart India Hackathon · Weather data via Open-Meteo · MAUSAM {year}",
+
+    "auth.login.title": "Welcome back",
+    "auth.login.subtitle": "Log in to your personalised homepage.",
+    "auth.login.submit": "Log In",
+    "auth.login.google": "Sign in with Google",
+    "auth.login.noAccount": "Don't have an account?",
+    "auth.login.signUpLink": "Sign up",
+    "auth.signup.title": "Create your account",
+    "auth.signup.subtitle": "Start building your personalised weather homepage.",
+    "auth.signup.submit": "Create Account",
+    "auth.signup.google": "Continue with Google",
+    "auth.signup.hasAccount": "Already have an account?",
+    "auth.signup.logInLink": "Log in",
+    "auth.email": "Email address",
+    "auth.password": "Password",
+    "auth.passwordHint": "Password (min. 6 characters)",
+    "auth.fullName": "Full name",
+    "auth.or": "or",
+    "auth.googleError": "Google sign-in didn’t work. Please try again.",
+    "auth.confirm.title": "Check your inbox",
+    "auth.confirm.body": "We sent a confirmation link to {email}. Confirm your email, then log in.",
+    "auth.confirm.cta": "Go to Log In",
+
+    "onboarding.title": "What matters most to you?",
+    "onboarding.subtitle":
+      "Pick one or more - MAUSAM will prioritize your homepage cards, insights, and recommendations around these. You can change this anytime in your profile.",
+    "onboarding.cta": "Build My Homepage",
+    "onboarding.hint": "Select at least one interest to continue.",
+
     "home.greeting": "Your homepage",
     "home.greetingNamed": "Hi {name},",
     "home.subtitle": "Here's what matters most for you right now.",
@@ -16,6 +82,7 @@ export const TRANSLATIONS = {
     "home.recommended": "Recommended for You",
     "home.tempTrend": "Temperature Trend",
     "home.rainProb": "Rain Probability",
+    "home.chartRainSuffix": "% rain",
     "home.humidity": "Humidity",
     "home.wind": "Wind",
     "home.pressure": "Pressure",
@@ -25,17 +92,59 @@ export const TRANSLATIONS = {
     "home.aqi": "Air Quality",
     "home.aqiUnavailable": "Unavailable",
     "home.loadError": "Unable to load live weather data right now. Please try again.",
+    "home.updating": "Updating personalized cards…",
+    "home.feelsLike": "Feels like {temp}",
+    "home.uvIndex": "UV Index",
+    "home.hourly": "Hourly Forecast",
+    "home.daily": "{count}-Day Forecast",
+    "home.now": "Now",
+    "home.today": "Today",
+    "home.tomorrow": "Tomorrow",
+    "home.sunMoon": "Sun & Moon",
+    "home.sunrise": "Sunrise",
+    "home.sunset": "Sunset",
+    "home.moonLit": "{phase} · {pct}% lit",
+    "home.moonUnavailable": "Moonrise/moonset not available for this location",
+    "home.marine": "Marine & Tides",
+    "home.waveHeight": "Wave height",
+    "home.wavePeriod": "Wave period",
+    "home.tidesToday": "Today's tides",
+    "home.sampleData": "Sample data",
+    "home.currentConditions": "Current Conditions",
+    "home.waveSwell": "Wave & Swell",
+    "home.realTide": "Real Tide Data",
+    "home.tideHigh": "high",
+    "home.tideLow": "low",
+
     "persona.switch": "Switch Profile (Demo)",
     "persona.runner": "Runner — Mumbai",
     "persona.farmer": "Farmer — Solapur",
     "persona.traveler": "Traveler — Delhi",
     "persona.fisherman": "Fisherman — Kochi",
+
     "alerts.title": "Alerts",
     "alerts.subtitle": "Active advisories for {name}.",
     "alerts.emptyTitle": "No active alerts",
     "alerts.emptyDesc": "Conditions in {name} look normal right now.",
     "alerts.disclaimer":
       "Alerts marked Official (NWS) come from the US National Weather Service. All other advisories are generated by MAUSAM from live weather thresholds and are not official government alerts.",
+    "alerts.tapDetails": "Tap for details",
+    "alerts.moreOne": "+{count} more active alert",
+    "alerts.moreMany": "+{count} more active alerts",
+
+    "explore.title": "Explore Locations",
+    "explore.subtitle": "Currently viewing {name}. Search anywhere in the world or pick a popular city.",
+    "explore.search": "Search any city, region, or country...",
+    "explore.popular": "Popular in India",
+    "location.searchPlaceholder": "Search city, region, or country...",
+    "location.useCurrent": "Use my current location",
+    "location.locating": "Locating...",
+    "location.searchError": "Couldn't search locations right now.",
+    "location.noneFound": "No locations found for “{query}”.",
+    "location.unsupported": "Location access is not supported by this browser.",
+    "location.accessError": "Unable to access your location.",
+    "assistant.source.fallback": "Smart Assistant · offline mode",
+
     "assistant.title": "AI Weather Assistant",
     "assistant.subtitle": "Ask questions in plain language - answers are grounded in your real, current weather data.",
     "assistant.context": "Context-aware for {name}",
@@ -48,9 +157,42 @@ export const TRANSLATIONS = {
     "assistant.suggest.rain": "Will it rain tonight?",
     "assistant.suggest.travel": "What should I carry if I travel tomorrow?",
     "assistant.suggest.event": "Is today good for an outdoor event?",
+
+    "profile.title": "Profile & Preferences",
+    "profile.basic": "Basic Info",
+    "profile.namePlaceholder": "Your name",
+    "profile.location": "Preferred Location",
+    "profile.current": "Current: {location}",
+    "profile.locationSearch": "Set a different home location...",
+    "profile.interests": "Your Interests",
+    "profile.notifications": "Notifications",
+    "profile.alertsToggle": "Severe weather alerts",
+    "profile.dailyToggle": "Daily weather summary",
+    "profile.save": "Save Changes",
+    "profile.saved": "Saved",
+    "profile.signOut": "Sign Out",
+
+    "weather.title": "Weather Details",
+    "weather.subtitle": "Complete conditions and forecast for {name}.",
+    "weather.feelsLike": "Feels Like",
+    "weather.tempTrend48": "Temperature Trend (48h)",
+    "weather.rainProb48": "Rain Probability (48h)",
+
     "whyThis": "Why this?",
+    "whyThis.defaultLabel": "Weather-based recommendation",
     "common.retry": "Try again",
     "common.officialNws": "Official (NWS)",
+    "common.errorDefault": "Something went wrong. Please try again.",
+    "common.justNow": "just now",
+    "common.minutesAgo": "{n}m ago",
+    "common.hoursAgo": "{n}h ago",
+    "common.daysAgo": "{n}d ago",
+    "common.uv.low": "Low",
+    "common.uv.moderate": "Moderate",
+    "common.uv.high": "High",
+    "common.uv.veryHigh": "Very High",
+    "common.uv.extreme": "Extreme",
+
     "interest.health": "Health-conscious",
     "interest.health.desc": "AQI, UV & comfort tracking",
     "interest.outdoor_fitness": "Runner / Outdoor Fitness",
@@ -73,11 +215,77 @@ export const TRANSLATIONS = {
   hi: {
     "nav.home": "होम",
     "nav.explore": "खोजें",
-    "nav.alerts": "चेतावनी",
+    "nav.alerts": "चेतावनियाँ",
     "nav.assistant": "सहायक",
-    "nav.profile": "प्रोफ़ाइल और पसंद",
+    "nav.profile": "प्रोफ़ाइल",
+    "nav.profileFull": "प्रोफ़ाइल और पसंद",
     "nav.signOut": "साइन आउट",
     "nav.language": "भाषा",
+    "nav.menu": "मेनू",
+    "nav.profileMenu": "प्रोफ़ाइल मेनू",
+    "nav.logIn": "लॉग इन",
+    "nav.getStarted": "शुरू करें",
+
+    "landing.badge": "व्यक्तिगत मौसम जानकारी",
+    "landing.heroBefore": "मौसम जो",
+    "landing.heroHighlight": "आपकी जरूरत के अनुसार बदले",
+    "landing.subtitle":
+      "MAUSAM एक होमपेज बनाता है जो आपके हितों — फिटनेस, यात्रा, परिवार, कृषि और अन्य — के अनुसार लाइव मौसम, चेतावनियाँ और सुझाव दिखाता है।",
+    "landing.ctaPrimary": "मेरा होमपेज बनाएं",
+    "landing.ctaSecondary": "मेरे पास पहले से खाता है",
+    "landing.personasTitle": "एक ही होमपेज, हर उपयोगकर्ता के अनुसार अलग रूप",
+    "landing.persona.fitness": "आउटडोर फिटनेस",
+    "landing.persona.fitness.detail": "दौड़ का सही समय, UV और AQI के साथ",
+    "landing.persona.travel": "यात्रा",
+    "landing.persona.travel.detail": "गंतव्य पूर्वानुमान और पैकिंग सुझाव",
+    "landing.persona.health": "स्वास्थ्य",
+    "landing.persona.health.detail": "AQI, UV और आराम की निगरानी",
+    "landing.persona.agri": "कृषि",
+    "landing.persona.agri.detail": "बारिश, पाला और खेत की स्थिति",
+    "landing.persona.marine": "समुद्री / समुद्र तट",
+    "landing.persona.marine.detail": "लहरें, हवा और ज्वार की जानकारी",
+    "landing.feature.personal.title": "एक होमपेज, आपके अनुसार",
+    "landing.feature.personal.desc":
+      "एक बार अपनी रुचियाँ चुनें — MAUSAM हर कार्ड, जानकारी और सुझाव को आपके लिए प्राथमिकता देता है।",
+    "landing.feature.live.title": "वास्तविक, लाइव मौसम डेटा",
+    "landing.feature.live.desc":
+      "वर्तमान स्थिति, घंटेवार और कई दिनों का पूर्वानुमान, AQI, UV और समुद्री डेटा — कभी मनगढ़ंत नहीं।",
+    "landing.feature.ai.title": "AI मौसम सहायक",
+    "landing.feature.ai.desc":
+      "“क्या आज दौड़ना चाहिए?” जैसे सवाल पूछें और अपने स्थानीय पूर्वानुमान पर आधारित जवाब पाएँ।",
+    "landing.feature.alerts.title": "ज़रूरी चेतावनियाँ",
+    "landing.feature.alerts.desc":
+      "भीषण मौसम, गर्मी, वायु गुणवत्ता और बारिश की सलाह स्पष्ट गंभीरता के साथ।",
+    "landing.footer": "स्मार्ट इंडिया हैकथॉन के लिए · मौसम डेटा Open-Meteo से · MAUSAM {year}",
+
+    "auth.login.title": "वापसी पर स्वागत है",
+    "auth.login.subtitle": "अपने व्यक्तिगत होमपेज में लॉग इन करें।",
+    "auth.login.submit": "लॉग इन",
+    "auth.login.google": "Google से साइन इन करें",
+    "auth.login.noAccount": "खाता नहीं है?",
+    "auth.login.signUpLink": "साइन अप करें",
+    "auth.signup.title": "अपना खाता बनाएँ",
+    "auth.signup.subtitle": "अपना व्यक्तिगत मौसम होमपेज बनाना शुरू करें।",
+    "auth.signup.submit": "खाता बनाएँ",
+    "auth.signup.google": "Google से जारी रखें",
+    "auth.signup.hasAccount": "पहले से खाता है?",
+    "auth.signup.logInLink": "लॉग इन",
+    "auth.email": "ईमेल पता",
+    "auth.password": "पासवर्ड",
+    "auth.passwordHint": "पासवर्ड (कम से कम 6 अक्षर)",
+    "auth.fullName": "पूरा नाम",
+    "auth.or": "या",
+    "auth.googleError": "Google साइन-इन काम नहीं कर सका। कृपया फिर कोशिश करें।",
+    "auth.confirm.title": "अपना इनबॉक्स देखें",
+    "auth.confirm.body": "हमने {email} पर पुष्टि लिंक भेजा है। ईमेल पुष्टि करें, फिर लॉग इन करें।",
+    "auth.confirm.cta": "लॉग इन पर जाएँ",
+
+    "onboarding.title": "आपके लिए क्या सबसे ज़रूरी है?",
+    "onboarding.subtitle":
+      "एक या अधिक चुनें — MAUSAM आपके होमपेज कार्ड, जानकारी और सुझाव इन्हीं के अनुसार दिखाएगा। आप इसे प्रोफ़ाइल में कभी भी बदल सकते हैं।",
+    "onboarding.cta": "मेरा होमपेज बनाएं",
+    "onboarding.hint": "आगे बढ़ने के लिए कम से कम एक रुचि चुनें।",
+
     "home.greeting": "आपका होमपेज",
     "home.greetingNamed": "नमस्ते {name},",
     "home.subtitle": "अभी आपके लिए सबसे ज़रूरी जानकारी यह है।",
@@ -85,6 +293,7 @@ export const TRANSLATIONS = {
     "home.recommended": "आपके लिए सुझाव",
     "home.tempTrend": "तापमान रुझान",
     "home.rainProb": "बारिश की संभावना",
+    "home.chartRainSuffix": "% बारिश",
     "home.humidity": "नमी",
     "home.wind": "हवा",
     "home.pressure": "दबाव",
@@ -94,17 +303,59 @@ export const TRANSLATIONS = {
     "home.aqi": "वायु गुणवत्ता",
     "home.aqiUnavailable": "उपलब्ध नहीं",
     "home.loadError": "लाइव मौसम डेटा अभी लोड नहीं हो पाया। कृपया फिर कोशिश करें।",
+    "home.updating": "व्यक्तिगत कार्ड अपडेट हो रहे हैं…",
+    "home.feelsLike": "महसूस {temp}",
+    "home.uvIndex": "UV सूचकांक",
+    "home.hourly": "घंटेवार पूर्वानुमान",
+    "home.daily": "{count}-दिवसीय पूर्वानुमान",
+    "home.now": "अभी",
+    "home.today": "आज",
+    "home.tomorrow": "कल",
+    "home.sunMoon": "सूर्य और चंद्रमा",
+    "home.sunrise": "सूर्योदय",
+    "home.sunset": "सूर्यास्त",
+    "home.moonLit": "{phase} · {pct}% प्रकाशित",
+    "home.moonUnavailable": "इस स्थान के लिए चंद्रोदय/चंद्रास्त उपलब्ध नहीं",
+    "home.marine": "समुद्री और ज्वार",
+    "home.waveHeight": "लहर की ऊँचाई",
+    "home.wavePeriod": "लहर अवधि",
+    "home.tidesToday": "आज के ज्वार",
+    "home.sampleData": "नमूना डेटा",
+    "home.currentConditions": "वर्तमान स्थिति",
+    "home.waveSwell": "लहर और स्वेल",
+    "home.realTide": "वास्तविक ज्वार डेटा",
+    "home.tideHigh": "उच्च",
+    "home.tideLow": "निम्न",
+
     "persona.switch": "प्रोफ़ाइल बदलें (डेमो)",
     "persona.runner": "धावक — मुंबई",
     "persona.farmer": "किसान — सोलापुर",
     "persona.traveler": "यात्री — दिल्ली",
     "persona.fisherman": "मछुआरा — कोच्चि",
+
     "alerts.title": "चेतावनियाँ",
     "alerts.subtitle": "{name} के लिए सक्रिय सलाह।",
     "alerts.emptyTitle": "कोई सक्रिय चेतावनी नहीं",
     "alerts.emptyDesc": "{name} में मौसम अभी सामान्य दिख रहा है।",
     "alerts.disclaimer":
       "Official (NWS) चिह्नित चेतावनियाँ अमेरिकी राष्ट्रीय मौसम सेवा से हैं। बाकी सलाह MAUSAM लाइव मौसम सीमाओं से बनाता है — ये सरकारी चेतावनी नहीं हैं।",
+    "alerts.tapDetails": "विवरण के लिए टैप करें",
+    "alerts.moreOne": "+{count} और सक्रिय चेतावनी",
+    "alerts.moreMany": "+{count} और सक्रिय चेतावनियाँ",
+
+    "explore.title": "स्थान खोजें",
+    "explore.subtitle": "अभी {name} देख रहे हैं। दुनिया में कहीं भी खोजें या लोकप्रिय शहर चुनें।",
+    "explore.search": "कोई भी शहर, क्षेत्र या देश खोजें...",
+    "explore.popular": "भारत में लोकप्रिय",
+    "location.searchPlaceholder": "शहर, क्षेत्र या देश खोजें...",
+    "location.useCurrent": "मेरा वर्तमान स्थान उपयोग करें",
+    "location.locating": "स्थान पता लगा रहे हैं...",
+    "location.searchError": "अभी स्थान खोज नहीं सके।",
+    "location.noneFound": "“{query}” के लिए कोई स्थान नहीं मिला।",
+    "location.unsupported": "इस ब्राउज़र में स्थान एक्सेस उपलब्ध नहीं है।",
+    "location.accessError": "आपका स्थान प्राप्त नहीं कर सके।",
+    "assistant.source.fallback": "स्मार्ट सहायक · ऑफ़लाइन मोड",
+
     "assistant.title": "AI मौसम सहायक",
     "assistant.subtitle": "सरल भाषा में पूछें — जवाब आपके वास्तविक मौसम डेटा पर आधारित होते हैं।",
     "assistant.context": "{name} के मौसम के अनुसार",
@@ -117,9 +368,42 @@ export const TRANSLATIONS = {
     "assistant.suggest.rain": "क्या आज रात बारिश होगी?",
     "assistant.suggest.travel": "कल यात्रा पर क्या ले जाना चाहिए?",
     "assistant.suggest.event": "क्या आज बाहरी कार्यक्रम के लिए अच्छा है?",
+
+    "profile.title": "प्रोफ़ाइल और पसंद",
+    "profile.basic": "मूल जानकारी",
+    "profile.namePlaceholder": "आपका नाम",
+    "profile.location": "पसंदीदा स्थान",
+    "profile.current": "वर्तमान: {location}",
+    "profile.locationSearch": "कोई अन्य घर स्थान सेट करें...",
+    "profile.interests": "आपकी रुचियाँ",
+    "profile.notifications": "सूचनाएँ",
+    "profile.alertsToggle": "भीषण मौसम चेतावनियाँ",
+    "profile.dailyToggle": "दैनिक मौसम सारांश",
+    "profile.save": "परिवर्तन सहेजें",
+    "profile.saved": "सहेजा गया",
+    "profile.signOut": "साइन आउट",
+
+    "weather.title": "मौसम विवरण",
+    "weather.subtitle": "{name} के लिए पूरी स्थिति और पूर्वानुमान।",
+    "weather.feelsLike": "महसूस",
+    "weather.tempTrend48": "तापमान रुझान (48 घंटे)",
+    "weather.rainProb48": "बारिश की संभावना (48 घंटे)",
+
     "whyThis": "यह क्यों?",
+    "whyThis.defaultLabel": "मौसम-आधारित सुझाव",
     "common.retry": "फिर कोशिश करें",
     "common.officialNws": "आधिकारिक (NWS)",
+    "common.errorDefault": "कुछ गलत हो गया। कृपया फिर कोशिश करें।",
+    "common.justNow": "अभी",
+    "common.minutesAgo": "{n} मि पहले",
+    "common.hoursAgo": "{n} घं पहले",
+    "common.daysAgo": "{n} दि पहले",
+    "common.uv.low": "कम",
+    "common.uv.moderate": "मध्यम",
+    "common.uv.high": "उच्च",
+    "common.uv.veryHigh": "बहुत उच्च",
+    "common.uv.extreme": "अत्यधिक",
+
     "interest.health": "स्वास्थ्य-केंद्रित",
     "interest.health.desc": "AQI, UV और आराम की निगरानी",
     "interest.outdoor_fitness": "धावक / आउटडोर फिटनेस",
@@ -142,3 +426,37 @@ export const TRANSLATIONS = {
 } as const;
 
 export type TranslationKey = keyof typeof TRANSLATIONS.en;
+
+export const LOCALE_STORAGE_KEY = "mausam:locale";
+/** Cookie mirror of localStorage so SSR can match the client locale (avoids hydration flicker/mismatch). */
+export const LOCALE_COOKIE_KEY = "mausam_locale";
+
+export function isLocale(value: string | null | undefined): value is Locale {
+  return value === "en" || value === "hi";
+}
+
+export function readStoredLocale(): Locale {
+  if (typeof window === "undefined") return "en";
+  try {
+    const saved = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+    if (isLocale(saved)) return saved;
+    const match = document.cookie.match(/(?:^|; )mausam_locale=(en|hi)/);
+    if (match && isLocale(match[1])) return match[1];
+  } catch {
+    // private mode / blocked storage
+  }
+  return "en";
+}
+
+export function persistLocale(locale: Locale): void {
+  try {
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+  } catch {
+    // ignore
+  }
+  try {
+    document.cookie = `${LOCALE_COOKIE_KEY}=${locale};path=/;max-age=31536000;SameSite=Lax`;
+  } catch {
+    // ignore
+  }
+}

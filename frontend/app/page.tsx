@@ -1,7 +1,11 @@
+"use client";
+
 import { Suspense } from "react";
 import Link from "next/link";
 import { LanguageToggle } from "@/components/common/LanguageToggle";
 import { OAuthLandingRedirect } from "@/components/auth/OAuthLandingRedirect";
+import { useLanguage } from "@/context/LanguageContext";
+import type { TranslationKey } from "@/lib/i18n/translations";
 import {
   ArrowRight,
   Bike,
@@ -16,38 +20,24 @@ import {
   Waves,
 } from "lucide-react";
 
-const PERSONAS = [
-  { icon: Bike, label: "Outdoor Fitness", detail: "Best time to run, UV & AQI aware" },
-  { icon: Briefcase, label: "Travel", detail: "Destination forecasts & packing tips" },
-  { icon: HeartPulse, label: "Health", detail: "AQI, UV and comfort tracking" },
-  { icon: Sprout, label: "Agriculture", detail: "Rainfall, frost & field conditions" },
-  { icon: Waves, label: "Marine / Beach", detail: "Waves, wind & tide outlook" },
+const PERSONAS: { icon: typeof Bike; labelKey: TranslationKey; detailKey: TranslationKey }[] = [
+  { icon: Bike, labelKey: "landing.persona.fitness", detailKey: "landing.persona.fitness.detail" },
+  { icon: Briefcase, labelKey: "landing.persona.travel", detailKey: "landing.persona.travel.detail" },
+  { icon: HeartPulse, labelKey: "landing.persona.health", detailKey: "landing.persona.health.detail" },
+  { icon: Sprout, labelKey: "landing.persona.agri", detailKey: "landing.persona.agri.detail" },
+  { icon: Waves, labelKey: "landing.persona.marine", detailKey: "landing.persona.marine.detail" },
 ];
 
-const FEATURES = [
-  {
-    icon: Sparkles,
-    title: "One homepage, personalised to you",
-    description: "Select your interests once - MAUSAM reprioritizes every card, insight, and recommendation around what actually matters to you.",
-  },
-  {
-    icon: Cloud,
-    title: "Real, live weather data",
-    description: "Current conditions, hourly & multi-day forecasts, AQI, UV, and marine data sourced live - never fabricated.",
-  },
-  {
-    icon: Bot,
-    title: "AI weather assistant",
-    description: "Ask natural questions like \u201cShould I run today?\u201d and get answers grounded in your real local forecast.",
-  },
-  {
-    icon: Shield,
-    title: "Alerts that matter",
-    description: "Severe weather, heat, air quality, and rain advisories surfaced with clear severity and context.",
-  },
+const FEATURES: { icon: typeof Sparkles; titleKey: TranslationKey; descKey: TranslationKey }[] = [
+  { icon: Sparkles, titleKey: "landing.feature.personal.title", descKey: "landing.feature.personal.desc" },
+  { icon: Cloud, titleKey: "landing.feature.live.title", descKey: "landing.feature.live.desc" },
+  { icon: Bot, titleKey: "landing.feature.ai.title", descKey: "landing.feature.ai.desc" },
+  { icon: Shield, titleKey: "landing.feature.alerts.title", descKey: "landing.feature.alerts.desc" },
 ];
 
 export default function LandingPage() {
+  const { t } = useLanguage();
+
   return (
     <div className="min-h-screen">
       <Suspense fallback={null}>
@@ -62,41 +52,41 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center gap-3">
           <LanguageToggle />
-          <Link href="/login" className="flex min-h-11 items-center text-sm font-medium text-mist-300 transition-colors hover:text-mist-100">
-            Log In
+          <Link
+            href="/login"
+            className="flex min-h-11 items-center text-sm font-medium text-mist-300 transition-colors hover:text-mist-100"
+          >
+            {t("nav.logIn")}
           </Link>
           <Link
             href="/signup"
             className="flex min-h-11 items-center rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-navy-950 transition-colors hover:bg-sky-400"
           >
-            Get Started
+            {t("nav.getStarted")}
           </Link>
         </div>
       </header>
 
       <section className="mx-auto max-w-5xl px-6 pt-16 pb-20 text-center md:pt-24">
         <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-mist-300">
-          <Sparkles className="h-3.5 w-3.5 text-sky-400" /> Personalised weather intelligence
+          <Sparkles className="h-3.5 w-3.5 text-sky-400" /> {t("landing.badge")}
         </span>
         <h1 className="mt-6 text-4xl font-semibold tracking-tight text-mist-100 md:text-6xl">
-          Weather that adapts to <span className="text-gradient-sky">who you are</span>
+          {t("landing.heroBefore")} <span className="text-gradient-sky">{t("landing.heroHighlight")}</span>
         </h1>
-        <p className="mx-auto mt-5 max-w-2xl text-base text-mist-300 md:text-lg">
-          MAUSAM builds one homepage that reprioritizes real-time weather, alerts, and insights around your
-          interests - fitness, travel, family, agriculture, and more.
-        </p>
+        <p className="mx-auto mt-5 max-w-2xl text-base text-mist-300 md:text-lg">{t("landing.subtitle")}</p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             href="/signup"
             className="flex items-center gap-2 rounded-full bg-sky-500 px-6 py-3 text-sm font-semibold text-navy-950 hover:bg-sky-400 transition-colors"
           >
-            Build My Homepage <ArrowRight className="h-4 w-4" />
+            {t("landing.ctaPrimary")} <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
             href="/login"
             className="rounded-full border border-white/15 px-6 py-3 text-sm font-medium text-mist-200 hover:bg-white/5 transition-colors"
           >
-            I already have an account
+            {t("landing.ctaSecondary")}
           </Link>
         </div>
       </section>
@@ -104,16 +94,16 @@ export default function LandingPage() {
       <section className="mx-auto max-w-6xl px-6 pb-20">
         <div className="glass rounded-3xl p-6 md:p-8">
           <p className="mb-5 text-center text-sm font-medium uppercase tracking-wide text-mist-400">
-            The same homepage, reshaped for every kind of user
+            {t("landing.personasTitle")}
           </p>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
             {PERSONAS.map((p) => (
-              <div key={p.label} className="glass-hover flex flex-col items-center gap-2 rounded-2xl p-4 text-center">
+              <div key={p.labelKey} className="glass-hover flex flex-col items-center gap-2 rounded-2xl p-4 text-center">
                 <div className="rounded-xl bg-sky-500/10 p-2.5">
                   <p.icon className="h-5 w-5 text-sky-300" />
                 </div>
-                <p className="text-sm font-medium text-mist-100">{p.label}</p>
-                <p className="text-xs text-mist-400">{p.detail}</p>
+                <p className="text-sm font-medium text-mist-100">{t(p.labelKey)}</p>
+                <p className="text-xs text-mist-400">{t(p.detailKey)}</p>
               </div>
             ))}
           </div>
@@ -123,19 +113,19 @@ export default function LandingPage() {
       <section className="mx-auto max-w-6xl px-6 pb-24">
         <div className="grid gap-4 md:grid-cols-2">
           {FEATURES.map((f) => (
-            <div key={f.title} className="glass glass-hover rounded-3xl p-6">
+            <div key={f.titleKey} className="glass glass-hover rounded-3xl p-6">
               <div className="mb-4 inline-flex rounded-xl bg-white/5 p-3">
                 <f.icon className="h-5 w-5 text-sky-300" />
               </div>
-              <h3 className="font-semibold text-mist-100">{f.title}</h3>
-              <p className="mt-2 text-sm text-mist-400">{f.description}</p>
+              <h3 className="font-semibold text-mist-100">{t(f.titleKey)}</h3>
+              <p className="mt-2 text-sm text-mist-400">{t(f.descKey)}</p>
             </div>
           ))}
         </div>
       </section>
 
       <footer className="border-t border-white/5 px-6 py-8 text-center text-xs text-mist-500">
-        Built for Smart India Hackathon &middot; Weather data via Open-Meteo &middot; MAUSAM {new Date().getFullYear()}
+        {t("landing.footer", { year: new Date().getFullYear() })}
       </footer>
     </div>
   );

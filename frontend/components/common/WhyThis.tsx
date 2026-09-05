@@ -12,9 +12,10 @@ interface WhyThisProps {
 
 /** Small "Why this?" explainability affordance (spec section 12). Click to reveal the
  * scoring engine's plain-language reason for why this card is prioritized/shown. */
-export function WhyThis({ reason, label = "Weather-based recommendation", className = "" }: WhyThisProps) {
+export function WhyThis({ reason, label, className = "" }: WhyThisProps) {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
+  const resolvedLabel = label || t("whyThis.defaultLabel");
 
   if (!reason) return null;
 
@@ -35,7 +36,7 @@ export function WhyThis({ reason, label = "Weather-based recommendation", classN
       {open && (
         <div className="glass absolute left-0 top-full z-20 mt-2 w-56 rounded-2xl p-3 text-xs text-mist-200 shadow-xl">
           <p>{reason}</p>
-          <p className="mt-2 text-[10px] uppercase tracking-wide text-mist-500">{label}</p>
+          <p className="mt-2 text-[10px] uppercase tracking-wide text-mist-500">{resolvedLabel}</p>
         </div>
       )}
     </span>

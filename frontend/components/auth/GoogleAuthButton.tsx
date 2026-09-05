@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useLanguage } from "@/context/LanguageContext";
 
 function GoogleMark() {
   return (
@@ -28,6 +29,7 @@ function GoogleMark() {
 }
 
 export function GoogleAuthButton({ label }: { label: string }) {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,7 +45,7 @@ export function GoogleAuthButton({ label }: { label: string }) {
     });
 
     if (oauthError) {
-      setError("Google sign-in didn’t work. Please try again.");
+      setError(t("auth.googleError"));
       setLoading(false);
     }
   };

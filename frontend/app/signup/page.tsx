@@ -5,12 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CloudSun, Loader2, Lock, Mail, User } from "lucide-react";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+import { LanguageToggle } from "@/components/common/LanguageToggle";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SignupPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { t } = useLanguage();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -53,7 +56,6 @@ export default function SignupPage() {
     }
 
     if (!data.session) {
-      // Email confirmation is required before a session exists.
       setConfirmationSent(true);
       setLoading(false);
       return;
@@ -67,15 +69,13 @@ export default function SignupPage() {
     return (
       <div className="flex min-h-screen items-center justify-center px-6">
         <div className="glass w-full max-w-sm rounded-3xl p-8 text-center">
-          <h1 className="text-xl font-semibold text-mist-100">Check your inbox</h1>
-          <p className="mt-2 text-sm text-mist-400">
-            We sent a confirmation link to <span className="text-mist-200">{email}</span>. Confirm your email, then log in.
-          </p>
+          <h1 className="text-xl font-semibold text-mist-100">{t("auth.confirm.title")}</h1>
+          <p className="mt-2 text-sm text-mist-400">{t("auth.confirm.body", { email })}</p>
           <Link
             href="/login"
             className="mt-6 inline-block rounded-full bg-sky-500 px-6 py-2.5 text-sm font-semibold text-navy-950 hover:bg-sky-400"
           >
-            Go to Log In
+            {t("auth.confirm.cta")}
           </Link>
         </div>
       </div>
@@ -85,6 +85,9 @@ export default function SignupPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-sm">
+        <div className="mb-6 flex justify-end">
+          <LanguageToggle />
+        </div>
         <Link href="/" className="mb-8 flex items-center justify-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-sky-600">
             <CloudSun className="h-5 w-5 text-navy-950" />
@@ -93,8 +96,8 @@ export default function SignupPage() {
         </Link>
 
         <div className="glass rounded-3xl p-8">
-          <h1 className="text-xl font-semibold text-mist-100">Create your account</h1>
-          <p className="mt-1 text-sm text-mist-400">Start building your personalised weather homepage.</p>
+          <h1 className="text-xl font-semibold text-mist-100">{t("auth.signup.title")}</h1>
+          <p className="mt-1 text-sm text-mist-400">{t("auth.signup.subtitle")}</p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div className="relative">
@@ -103,7 +106,7 @@ export default function SignupPage() {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Full name"
+                placeholder={t("auth.fullName")}
                 className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-3 pl-11 pr-4 text-sm text-mist-100 placeholder:text-mist-400 outline-none focus:border-sky-400/50"
               />
             </div>
@@ -114,7 +117,7 @@ export default function SignupPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email address"
+                placeholder={t("auth.email")}
                 className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-3 pl-11 pr-4 text-sm text-mist-100 placeholder:text-mist-400 outline-none focus:border-sky-400/50"
               />
             </div>
@@ -126,7 +129,7 @@ export default function SignupPage() {
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password (min. 6 characters)"
+                placeholder={t("auth.passwordHint")}
                 className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-3 pl-11 pr-4 text-sm text-mist-100 placeholder:text-mist-400 outline-none focus:border-sky-400/50"
               />
             </div>
@@ -139,22 +142,22 @@ export default function SignupPage() {
               className="flex w-full items-center justify-center gap-2 rounded-full bg-sky-500 py-3 text-sm font-semibold text-navy-950 hover:bg-sky-400 transition-colors disabled:opacity-60"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Create Account
+              {t("auth.signup.submit")}
             </button>
           </form>
 
           <div className="my-5 flex items-center gap-3 text-[11px] uppercase tracking-wide text-mist-500">
             <span className="h-px flex-1 bg-white/10" />
-            or
+            {t("auth.or")}
             <span className="h-px flex-1 bg-white/10" />
           </div>
 
-          <GoogleAuthButton label="Continue with Google" />
+          <GoogleAuthButton label={t("auth.signup.google")} />
 
           <p className="mt-6 text-center text-sm text-mist-400">
-            Already have an account?{" "}
+            {t("auth.signup.hasAccount")}{" "}
             <Link href="/login" className="font-medium text-sky-400 hover:text-sky-300">
-              Log in
+              {t("auth.signup.logInLink")}
             </Link>
           </p>
         </div>

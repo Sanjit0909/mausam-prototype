@@ -8,6 +8,7 @@ import { LocationSearch } from "@/components/location/LocationSearch";
 import { useAuth } from "@/context/AuthContext";
 import { usePreferences } from "@/context/PreferencesContext";
 import { useLocation } from "@/context/LocationContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { locationLabel } from "@/lib/utils/format";
 import type { InterestKey } from "@/lib/types";
 
@@ -16,6 +17,7 @@ export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const { preferences, updatePreferences } = usePreferences();
   const { location, setLocation } = useLocation();
+  const { t } = useLanguage();
   const [name, setName] = useState(preferences.name);
   const [interests, setInterests] = useState<InterestKey[]>(preferences.interests);
   const [alertsOn, setAlertsOn] = useState(preferences.notification_prefs.alerts);
@@ -50,47 +52,47 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 md:px-8 space-y-6">
+    <div className="mx-auto max-w-2xl space-y-6 px-4 py-8 md:px-8">
       <div>
-        <h1 className="text-xl font-semibold text-mist-100">Profile &amp; Preferences</h1>
+        <h1 className="text-xl font-semibold text-mist-100">{t("profile.title")}</h1>
         <p className="mt-1 text-sm text-mist-400">{user?.email}</p>
       </div>
 
-      <div className="glass rounded-3xl p-6 space-y-4">
+      <div className="glass space-y-4 rounded-3xl p-6">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-mist-200">
-          <User className="h-4 w-4 text-sky-400" /> Basic Info
+          <User className="h-4 w-4 text-sky-400" /> {t("profile.basic")}
         </h2>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Your name"
+          placeholder={t("profile.namePlaceholder")}
           className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-mist-100 placeholder:text-mist-400 outline-none focus:border-sky-400/50"
         />
       </div>
 
-      <div className="glass rounded-3xl p-6 space-y-4">
+      <div className="glass space-y-4 rounded-3xl p-6">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-mist-200">
-          <MapPin className="h-4 w-4 text-sky-400" /> Preferred Location
+          <MapPin className="h-4 w-4 text-sky-400" /> {t("profile.location")}
         </h2>
-        <p className="text-sm text-mist-300">Current: {locationLabel(location)}</p>
-        <LocationSearch onSelect={setLocation} placeholder="Set a different home location..." />
+        <p className="text-sm text-mist-300">{t("profile.current", { location: locationLabel(location) })}</p>
+        <LocationSearch onSelect={setLocation} placeholder={t("profile.locationSearch")} />
       </div>
 
-      <div className="glass rounded-3xl p-6 space-y-4">
-        <h2 className="text-sm font-semibold text-mist-200">Your Interests</h2>
+      <div className="glass space-y-4 rounded-3xl p-6">
+        <h2 className="text-sm font-semibold text-mist-200">{t("profile.interests")}</h2>
         <InterestSelector selected={interests} onToggle={toggleInterest} />
       </div>
 
-      <div className="glass rounded-3xl p-6 space-y-4">
+      <div className="glass space-y-4 rounded-3xl p-6">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-mist-200">
-          <Bell className="h-4 w-4 text-sky-400" /> Notifications
+          <Bell className="h-4 w-4 text-sky-400" /> {t("profile.notifications")}
         </h2>
         <label className="flex items-center justify-between text-sm text-mist-300">
-          Severe weather alerts
+          {t("profile.alertsToggle")}
           <input type="checkbox" checked={alertsOn} onChange={(e) => setAlertsOn(e.target.checked)} className="h-4 w-4 accent-sky-500" />
         </label>
         <label className="flex items-center justify-between text-sm text-mist-300">
-          Daily weather summary
+          {t("profile.dailyToggle")}
           <input
             type="checkbox"
             checked={dailySummary}
@@ -103,16 +105,16 @@ export default function ProfilePage() {
       <div className="flex items-center gap-3">
         <button
           onClick={handleSave}
-          className="flex items-center gap-2 rounded-full bg-sky-500 px-6 py-3 text-sm font-semibold text-navy-950 hover:bg-sky-400 transition-colors"
+          className="flex items-center gap-2 rounded-full bg-sky-500 px-6 py-3 text-sm font-semibold text-navy-950 transition-colors hover:bg-sky-400"
         >
           {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-          {saved ? "Saved" : "Save Changes"}
+          {saved ? t("profile.saved") : t("profile.save")}
         </button>
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-2 rounded-full border border-white/10 px-6 py-3 text-sm font-medium text-rose-400 hover:bg-rose-500/10 transition-colors"
+          className="flex items-center gap-2 rounded-full border border-white/10 px-6 py-3 text-sm font-medium text-rose-400 transition-colors hover:bg-rose-500/10"
         >
-          <LogOut className="h-4 w-4" /> Sign Out
+          <LogOut className="h-4 w-4" /> {t("profile.signOut")}
         </button>
       </div>
     </div>

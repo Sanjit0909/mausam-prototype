@@ -1,11 +1,24 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { TRANSLATIONS, type Locale, type TranslationKey } from "@/lib/i18n/translations";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  TRANSLATIONS,
+  persistLocale,
+  readStoredLocale,
+  type Locale,
+  type TranslationKey,
+} from "@/lib/i18n/translations";
 
-const STORAGE_KEY = "mausam:locale";
-
-type Vars = Record<string, string>;
+type Vars = Record<string, string | number>;
 
 interface LanguageContextValue {
   locale: Locale;
@@ -17,23 +30,39 @@ const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 function interpolate(template: string, vars?: Vars): string {
   if (!vars) return template;
-  return Object.entries(vars).reduce((acc, [key, value]) => acc.replaceAll(`{${key}}`, value), template);
+  return Object.entries(vars).reduce(
+    (acc, [key, value]) => acc.replaceAll(`{${key}}`, String(value)),
+    template
+  );
 }
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("en");
+export function LanguageProvider({
+  children,
+  initialLocale = "en",
+}: {
+  children: ReactNode;
+  /** From cookie on the server so first paint matches hydration. */
+  initialLocale?: Locale;
+}) {
+  const [locale, setLocaleState] = useState<Locale>(initialLocale);
+
+  // Sync localStorage → state before paint when cookie was missing (legacy sessions).
+  useLayoutEffect(() => {
+    const stored = readStoredLocale();
+    if (stored !== initialLocale) {
+      setLocaleState(stored);
+    }
+    persistLocale(stored);
+    document.documentElement.lang = stored;
+  }, [initialLocale]);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved === "en" || saved === "hi") {
-      setLocaleState(saved);
-      document.documentElement.lang = saved;
-    }
-  }, []);
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
-    window.localStorage.setItem(STORAGE_KEY, next);
+    persistLocale(next);
     document.documentElement.lang = next;
   }, []);
 

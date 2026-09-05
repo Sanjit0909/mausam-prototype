@@ -1,6 +1,7 @@
 "use client";
 
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useLanguage } from "@/context/LanguageContext";
 import { formatHourLabel } from "@/lib/utils/format";
 import type { HourlyPoint } from "@/lib/types";
 
@@ -14,11 +15,23 @@ interface TooltipPayloadItem {
   value: number;
 }
 
-function ChartTooltip({ active, payload, label, suffix }: { active?: boolean; payload?: TooltipPayloadItem[]; label?: string; suffix: string }) {
+function ChartTooltip({
+  active,
+  payload,
+  label,
+  suffix,
+  locale,
+}: {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string;
+  suffix: string;
+  locale: string;
+}) {
   if (!active || !payload || !payload.length) return null;
   return (
     <div className="glass rounded-xl px-3 py-2 text-xs">
-      <p className="text-mist-400">{label ? formatHourLabel(label) : ""}</p>
+      <p className="text-mist-400">{label ? formatHourLabel(label, locale) : ""}</p>
       <p className="font-semibold text-mist-100">
         {payload[0].value}
         {suffix}
@@ -28,11 +41,14 @@ function ChartTooltip({ active, payload, label, suffix }: { active?: boolean; pa
 }
 
 export function WeatherChart({ hourly, variant = "temperature", limit = 24 }: WeatherChartProps) {
+  const { locale, t } = useLanguage();
   const data = hourly.slice(0, limit).map((h) => ({
     time: h.time,
     temperature: Math.round(h.temperature),
     rain: Math.round(h.precipitation_probability ?? 0),
   }));
+
+  const tickFmt = (value: string) => formatHourLabel(value, locale);
 
   if (variant === "rain") {
     return (
@@ -42,14 +58,14 @@ export function WeatherChart({ hourly, variant = "temperature", limit = 24 }: We
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
             <XAxis
               dataKey="time"
-              tickFormatter={formatHourLabel}
+              tickFormatter={tickFmt}
               tick={{ fill: "#8b9bc2", fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               interval={2}
             />
             <YAxis tick={{ fill: "#8b9bc2", fontSize: 11 }} axisLine={false} tickLine={false} width={36} unit="%" />
-            <Tooltip content={<ChartTooltip suffix="% rain" />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+            <Tooltip content={<ChartTooltip suffix={t("home.chartRainSuffix")} locale={locale} />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
             <Bar dataKey="rain" fill="#29b6f6" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -70,14 +86,14 @@ export function WeatherChart({ hourly, variant = "temperature", limit = 24 }: We
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
           <XAxis
             dataKey="time"
-            tickFormatter={formatHourLabel}
+            tickFormatter={tickFmt}
             tick={{ fill: "#8b9bc2", fontSize: 11 }}
             axisLine={false}
             tickLine={false}
             interval={2}
           />
           <YAxis tick={{ fill: "#8b9bc2", fontSize: 11 }} axisLine={false} tickLine={false} width={36} unit="\u00b0" />
-          <Tooltip content={<ChartTooltip suffix="\u00b0" />} cursor={{ stroke: "rgba(255,255,255,0.15)" }} />
+          <Tooltip content={<ChartTooltip suffix="\u00b0" locale={locale} />} cursor={{ stroke: "rgba(255,255,255,0.15)" }} />
           <Area type="monotone" dataKey="temperature" stroke="#4fc3f7" strokeWidth={2} fill="url(#tempGradient)" />
         </AreaChart>
       </ResponsiveContainer>

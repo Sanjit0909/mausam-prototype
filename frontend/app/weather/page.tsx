@@ -14,12 +14,14 @@ import { HeroSkeleton, GridSkeleton, Skeleton } from "@/components/common/Loadin
 import { ErrorState } from "@/components/common/ErrorState";
 import { useLocation } from "@/context/LocationContext";
 import { usePreferences } from "@/context/PreferencesContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { useHomeData } from "@/hooks/useHomeData";
 import { formatPercent, locationLabel, windDirectionLabel } from "@/lib/utils/format";
 
 export default function WeatherDetailsPage() {
   const { location } = useLocation();
   const { preferences } = usePreferences();
+  const { t } = useLanguage();
   const { weather, forecast, airQuality, astronomy, marine, loading, error, refresh } = useHomeData(
     location.lat,
     location.lon,
@@ -28,10 +30,10 @@ export default function WeatherDetailsPage() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8 space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 md:px-8 md:py-8">
       <div>
-        <h1 className="text-xl font-semibold text-mist-100">Weather Details</h1>
-        <p className="text-sm text-mist-400">Complete conditions and forecast for {location.name}.</p>
+        <h1 className="text-xl font-semibold text-mist-100">{t("weather.title")}</h1>
+        <p className="text-sm text-mist-400">{t("weather.subtitle", { name: location.name })}</p>
       </div>
 
       {loading && (
@@ -49,18 +51,26 @@ export default function WeatherDetailsPage() {
           <WeatherHero weather={weather} />
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <WeatherMetricCard icon={Thermometer} label="Feels Like" value={`${weather.current.feels_like.toFixed(0)}\u00b0`} />
-            <WeatherMetricCard icon={Droplets} label="Humidity" value={formatPercent(weather.current.humidity)} />
+            <WeatherMetricCard
+              icon={Thermometer}
+              label={t("weather.feelsLike")}
+              value={`${weather.current.feels_like.toFixed(0)}\u00b0`}
+            />
+            <WeatherMetricCard icon={Droplets} label={t("home.humidity")} value={formatPercent(weather.current.humidity)} />
             <WeatherMetricCard
               icon={Wind}
-              label="Wind"
+              label={t("home.wind")}
               value={`${weather.current.wind_speed.toFixed(0)} km/h`}
               sublabel={windDirectionLabel(weather.current.wind_direction)}
             />
-            <WeatherMetricCard icon={Gauge} label="Pressure" value={`${weather.current.pressure.toFixed(0)} hPa`} />
+            <WeatherMetricCard
+              icon={Gauge}
+              label={t("home.pressure")}
+              value={`${weather.current.pressure.toFixed(0)} hPa`}
+            />
             <WeatherMetricCard
               icon={Eye}
-              label="Visibility"
+              label={t("home.visibility")}
               value={weather.current.visibility ? `${weather.current.visibility.toFixed(1)} km` : "--"}
             />
             <UVCard uvIndex={weather.current.uv_index} />
@@ -71,11 +81,11 @@ export default function WeatherDetailsPage() {
             <>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div className="glass rounded-3xl p-6">
-                  <h3 className="text-sm font-semibold text-mist-200 mb-2">Temperature Trend (48h)</h3>
+                  <h3 className="mb-2 text-sm font-semibold text-mist-200">{t("weather.tempTrend48")}</h3>
                   <WeatherChart hourly={forecast.hourly} variant="temperature" limit={48} />
                 </div>
                 <div className="glass rounded-3xl p-6">
-                  <h3 className="text-sm font-semibold text-mist-200 mb-2">Rain Probability (48h)</h3>
+                  <h3 className="mb-2 text-sm font-semibold text-mist-200">{t("weather.rainProb48")}</h3>
                   <WeatherChart hourly={forecast.hourly} variant="rain" limit={48} />
                 </div>
               </div>

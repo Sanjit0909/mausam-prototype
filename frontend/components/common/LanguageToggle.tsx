@@ -23,11 +23,11 @@ export function LanguageToggle({ className = "" }: { className?: string }) {
       <button
         type="button"
         onClick={() => setLocale("hi")}
-        className={`min-h-11 min-w-11 rounded-full px-2 text-xs font-semibold ${
+        className={`min-h-11 min-w-[3rem] rounded-full px-2 text-xs font-semibold ${
           locale === "hi" ? "bg-white/15 text-mist-100" : "text-mist-400"
         }`}
       >
-        हिं
+        हिंदी
       </button>
     </div>
   );

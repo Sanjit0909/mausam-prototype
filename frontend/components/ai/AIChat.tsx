@@ -10,11 +10,11 @@ import { locationLabel } from "@/lib/utils/format";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import type { ChatMessage, ChatSource } from "@/lib/types";
 
-const SOURCE_LABELS: Record<ChatSource, string> = {
+/** Provider product names stay untranslated; only the offline UI label is localized. */
+const SOURCE_LABELS: Record<Exclude<ChatSource, "fallback">, string> = {
   deepseek: "DeepSeek V4 Flash",
   gemini: "Gemini",
   openrouter: "OpenRouter",
-  fallback: "Smart Assistant · offline mode",
 };
 
 const SUGGESTION_KEYS: TranslationKey[] = [
@@ -106,7 +106,9 @@ export function AIChat() {
               <p className="whitespace-pre-wrap">{msg.content}</p>
               {msg.source && (
                 <p className="mt-1.5 text-[10px] uppercase tracking-wide text-mist-400">
-                  {SOURCE_LABELS[msg.source] ?? msg.source}
+                  {msg.source === "fallback"
+                    ? t("assistant.source.fallback")
+                    : (SOURCE_LABELS[msg.source] ?? msg.source)}
                 </p>
               )}
             </div>

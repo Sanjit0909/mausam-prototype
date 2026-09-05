@@ -3,6 +3,7 @@
 import { Wind } from "lucide-react";
 import { SourceBadge } from "@/components/common/SourceBadge";
 import { WhyThis } from "@/components/common/WhyThis";
+import { useLanguage } from "@/context/LanguageContext";
 import { aqiColor, providerDisplayName } from "@/lib/utils/format";
 import type { AirQualityResponse } from "@/lib/types";
 
@@ -15,6 +16,7 @@ export function AQICard({
   reason?: string;
   onActivate?: () => void;
 }) {
+  const { t } = useLanguage();
   const aqi = data.us_aqi ?? null;
   const pct = aqi !== null ? Math.min(100, (aqi / 300) * 100) : 0;
 
@@ -26,13 +28,13 @@ export function AQICard({
       tabIndex={onActivate ? 0 : undefined}
     >
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wide text-mist-400">Air Quality</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-mist-400">{t("home.aqi")}</span>
         <Wind className={`h-4 w-4 ${aqiColor(aqi)}`} />
       </div>
       <div className="flex items-end justify-between">
         <div>
           <p className={`text-2xl font-semibold ${aqiColor(aqi)}`}>{aqi ?? "--"}</p>
-          <p className="text-xs text-mist-400 mt-1">{data.category}</p>
+          <p className="mt-1 text-xs text-mist-400">{data.category}</p>
         </div>
         {data.pm2_5 !== null && data.pm2_5 !== undefined && (
           <p className="text-xs text-mist-400">PM2.5: {data.pm2_5.toFixed(0)} \u00b5g/m\u00b3</p>

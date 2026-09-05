@@ -9,18 +9,19 @@ interface ErrorStateProps {
   compact?: boolean;
 }
 
-export function ErrorState({ message = "Something went wrong. Please try again.", onRetry, compact }: ErrorStateProps) {
+export function ErrorState({ message, onRetry, compact }: ErrorStateProps) {
   const { t } = useLanguage();
+  const displayMessage = message || t("common.errorDefault");
   return (
     <div
-      className={`glass rounded-3xl flex flex-col items-center justify-center text-center gap-3 ${
+      className={`glass flex flex-col items-center justify-center gap-3 text-center ${
         compact ? "p-6" : "p-10"
-      }`}
+      } rounded-3xl`}
     >
       <div className="rounded-full bg-rose-500/10 p-3">
         <AlertTriangle className="h-6 w-6 text-rose-400" />
       </div>
-      <p className="text-mist-300 text-sm max-w-xs">{message}</p>
+      <p className="max-w-xs text-sm text-mist-300">{displayMessage}</p>
       {onRetry && (
         <button
           onClick={onRetry}

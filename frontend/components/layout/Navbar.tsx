@@ -87,7 +87,7 @@ export function Navbar() {
             <button
               onClick={() => setProfileOpen((v) => !v)}
               className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-mist-100 transition-colors hover:bg-white/20"
-              aria-label="Profile menu"
+              aria-label={t("nav.profileMenu")}
             >
               <User className="h-4 w-4" />
             </button>
@@ -102,7 +102,7 @@ export function Navbar() {
                   className="flex items-center gap-2 rounded-xl px-3 py-2 text-mist-200 hover:bg-white/10"
                   onClick={() => setProfileOpen(false)}
                 >
-                  <Settings className="h-4 w-4" /> {t("nav.profile")}
+                  <Settings className="h-4 w-4" /> {t("nav.profileFull")}
                 </Link>
                 <Link
                   href="/assistant"
@@ -124,7 +124,7 @@ export function Navbar() {
           <button
             onClick={() => setMenuOpen((v) => !v)}
             className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-mist-300 hover:bg-white/10 md:hidden"
-            aria-label="Menu"
+            aria-label={t("nav.menu")}
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -146,7 +146,7 @@ export function Navbar() {
             </Link>
           ))}
           <Link href="/profile" onClick={() => setMenuOpen(false)} className="min-h-11 rounded-xl px-3 py-2 text-sm text-mist-300">
-            {t("nav.profile")}
+            {t("nav.profileFull")}
           </Link>
           <button onClick={handleSignOut} className="min-h-11 rounded-xl px-3 py-2 text-left text-sm text-rose-400">
             {t("nav.signOut")}

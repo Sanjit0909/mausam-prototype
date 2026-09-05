@@ -19,11 +19,11 @@ export function windDirectionLabel(degrees: number | null | undefined): string {
   return COMPASS_POINTS[index];
 }
 
-export function formatTime(iso: string | null | undefined, timezone?: string | null): string {
+export function formatTime(iso: string | null | undefined, timezone?: string | null, locale: string = "en"): string {
   if (!iso) return "--";
   try {
     const date = new Date(iso.length === 16 ? `${iso}:00` : iso);
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat(locale === "hi" ? "hi-IN" : "en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
@@ -34,20 +34,20 @@ export function formatTime(iso: string | null | undefined, timezone?: string | n
   }
 }
 
-export function formatDayLabel(dateStr: string, index: number): string {
+export function formatDayLabel(dateStr: string, index: number, locale: string = "en"): string {
   if (index === 0) return "Today";
   if (index === 1) return "Tomorrow";
   try {
-    return new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(new Date(dateStr));
+    return new Intl.DateTimeFormat(locale === "hi" ? "hi-IN" : "en-US", { weekday: "short" }).format(new Date(dateStr));
   } catch {
     return dateStr;
   }
 }
 
-export function formatHourLabel(iso: string): string {
+export function formatHourLabel(iso: string, locale: string = "en"): string {
   try {
     const date = new Date(iso.length === 16 ? `${iso}:00` : iso);
-    return new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: true }).format(date);
+    return new Intl.DateTimeFormat(locale === "hi" ? "hi-IN" : "en-US", { hour: "numeric", hour12: true }).format(date);
   } catch {
     return iso;
   }

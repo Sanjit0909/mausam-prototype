@@ -164,7 +164,7 @@ export default function HomePage() {
       <PersonaSwitcher />
 
       {refreshing && weather && (
-        <p className="text-xs text-mist-500">Updating personalized cards…</p>
+        <p className="text-xs text-mist-500">{t("home.updating")}</p>
       )}
 
       {loading && !weather && (

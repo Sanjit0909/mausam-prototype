@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { MapPin } from "lucide-react";
 import { LocationSearch } from "@/components/location/LocationSearch";
 import { useLocation } from "@/context/LocationContext";
+import { useLanguage } from "@/context/LanguageContext";
 import type { LocationSearchResult } from "@/lib/types";
 
 const POPULAR_CITIES: LocationSearchResult[] = [
@@ -20,6 +21,7 @@ const POPULAR_CITIES: LocationSearchResult[] = [
 export default function ExplorePage() {
   const router = useRouter();
   const { setLocation, location } = useLocation();
+  const { t } = useLanguage();
 
   const handleSelect = (loc: LocationSearchResult) => {
     setLocation(loc);
@@ -28,17 +30,15 @@ export default function ExplorePage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
-      <h1 className="text-xl font-semibold text-mist-100">Explore Locations</h1>
-      <p className="mt-1 text-sm text-mist-400">
-        Currently viewing <span className="text-mist-200">{location.name}</span>. Search anywhere in the world or pick a popular city.
-      </p>
+      <h1 className="text-xl font-semibold text-mist-100">{t("explore.title")}</h1>
+      <p className="mt-1 text-sm text-mist-400">{t("explore.subtitle", { name: location.name })}</p>
 
       <div className="mt-6">
-        <LocationSearch autoFocus onSelect={handleSelect} placeholder="Search any city, region, or country..." />
+        <LocationSearch autoFocus onSelect={handleSelect} placeholder={t("explore.search")} />
       </div>
 
       <div className="mt-8">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-mist-400">Popular in India</h2>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-mist-400">{t("explore.popular")}</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {POPULAR_CITIES.map((city) => (
             <button

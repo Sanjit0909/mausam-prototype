@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getHomeBundle } from "@/lib/api/home";
 import { getInteractionQueryString } from "@/hooks/useInteractionTracking";
+import { useLanguage } from "@/context/LanguageContext";
 import type {
   AirQualityResponse,
   AlertsResponse,
@@ -41,6 +42,7 @@ const EMPTY: HomeData = {
 };
 
 export function useHomeData(lat: number, lon: number, name: string | undefined, interests: string[]): UseHomeDataResult {
+  const { t } = useLanguage();
   const [data, setData] = useState<HomeData>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -48,7 +50,7 @@ export function useHomeData(lat: number, lon: number, name: string | undefined, 
   const [tick, setTick] = useState(0);
   const hasDataRef = useRef(false);
 
-  const refresh = useCallback(() => setTick((t) => t + 1), []);
+  const refresh = useCallback(() => setTick((n) => n + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,7 +81,7 @@ export function useHomeData(lat: number, lon: number, name: string | undefined, 
       } catch {
         if (cancelled) return;
         if (!hasDataRef.current) {
-          setError("Unable to load live weather data right now. Please try again.");
+          setError(t("home.loadError"));
         }
       } finally {
         if (!cancelled) {
@@ -94,7 +96,7 @@ export function useHomeData(lat: number, lon: number, name: string | undefined, 
       cancelled = true;
       controller.abort();
     };
-  }, [lat, lon, name, interests.join(","), tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lat, lon, name, interests.join(","), tick, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { ...data, loading, refreshing, error, refresh };
 }
