@@ -6,18 +6,34 @@ import { useLanguage } from "@/context/LanguageContext";
 interface SourceBadgeProps {
   /** e.g. "IMD", "Open-Meteo", "OpenWeatherMap", "Stormglass", "MAUSAM Advisory" */
   provider: string;
-  /** e.g. "Official Warning", "Forecast", "AQI", "Marine" */
+  /** e.g. "Forecast", "AQI", "Marine" */
   kind?: string;
   /** ISO timestamp this data was issued/observed - renders as a relative "Updated Xm ago". */
   updatedAt?: string | null;
+  /**
+   * Visual emphasis for authentic IMD provenance only.
+   * Never set for NWS / Open-Meteo / derived advisories.
+   */
   official?: boolean;
   className?: string;
 }
 
-/** Reusable data-provenance label (spec section 21): "[Provider - Kind]" + freshness. Never
- * invents a provider name - always renders exactly what the backend reported as `source`. */
+function sourceLabel(provider: string, imdLabel: string, nwsLabel: string): string {
+  const key = provider.trim().toLowerCase();
+  if (key === "imd" || key.includes("imd")) return imdLabel;
+  if (key === "nws" || key.includes("nws") || key.includes("national weather service")) {
+    return nwsLabel;
+  }
+  return provider;
+}
+
+/** Reusable data-provenance label: provider + optional kind + freshness.
+ * Never invents a provider — renders what the backend reported, with accurate
+ * “IMD source” / “NWS source” wording (no false “Official IMD” claims). */
 export function SourceBadge({ provider, kind, updatedAt, official = false, className = "" }: SourceBadgeProps) {
   const { t } = useLanguage();
+  const normalized = provider.trim().toLowerCase();
+  const isImdOfficial = official && normalized.includes("imd");
 
   let ago = "";
   if (updatedAt) {
@@ -34,15 +50,19 @@ export function SourceBadge({ provider, kind, updatedAt, official = false, class
     }
   }
 
+  const label = sourceLabel(provider, t("common.sourceImd"), t("common.sourceNws"));
+
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-        official ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-white/10 bg-white/5 text-mist-400"
+        isImdOfficial
+          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+          : "border-white/10 bg-white/5 text-mist-400"
       } ${className}`}
     >
-      {official && <ShieldCheck className="h-3 w-3" />}
+      {isImdOfficial && <ShieldCheck className="h-3 w-3" />}
       <span>
-        {provider}
+        {label}
         {kind ? ` \u2022 ${kind}` : ""}
       </span>
       {ago && <span className="opacity-70">\u00b7 {ago}</span>}

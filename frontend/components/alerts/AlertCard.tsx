@@ -16,7 +16,7 @@ const TYPE_ICONS: Record<string, typeof AlertTriangle> = {
 
 export function AlertCard({ alert }: { alert: WeatherAlert }) {
   const Icon = TYPE_ICONS[alert.alert_type] ?? AlertTriangle;
-  const isOfficial = alert.source === "IMD" || alert.source === "NWS";
+  const isImd = alert.source === "IMD";
 
   return (
     <div className={`glass rounded-3xl p-5 border ${severityColor(alert.severity)}`}>
@@ -30,7 +30,11 @@ export function AlertCard({ alert }: { alert: WeatherAlert }) {
             <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-mist-300">
               {alert.severity}
             </span>
-            <SourceBadge provider={alert.provider_label} updatedAt={alert.updated_at || alert.issued_at} official={isOfficial} />
+            <SourceBadge
+              provider={alert.provider_label || alert.source}
+              updatedAt={alert.updated_at || alert.issued_at}
+              official={isImd}
+            />
           </div>
           <p className="mt-1.5 text-sm text-mist-300">{alert.description}</p>
           {alert.area && (
