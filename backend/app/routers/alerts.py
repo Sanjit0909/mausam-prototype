@@ -5,7 +5,7 @@ from fastapi import APIRouter, Query
 from ..models.alerts import AlertsResponse, has_severe_alert
 from ..services.air_quality import get_air_quality
 from ..services.alerts_engine import generate_derived_alerts
-from ..services.alerts_provider import get_official_alerts
+from ..services.alerts_provider import get_official_alerts_bundle
 from ..services.weather_provider import get_current_weather, get_forecast
 
 router = APIRouter(prefix="/api/alerts", tags=["alerts"])
@@ -22,7 +22,7 @@ async def get_alerts(
         get_current_weather(lat, lon, name),
         get_forecast(lat, lon, days=1, name=name),
         get_air_quality(lat, lon, name),
-        get_official_alerts(lat, lon),
+        get_official_alerts_bundle(lat, lon),
         return_exceptions=True,
     )
 
@@ -31,7 +31,11 @@ async def get_alerts(
 
     forecast = None if isinstance(forecast_result, BaseException) else forecast_result
     air_quality = None if isinstance(air_quality_result, BaseException) else air_quality_result
-    official_alerts = [] if isinstance(official, BaseException) else official
+    official_alerts = []
+    imd_meta = None
+    if not isinstance(official, BaseException):
+        official_alerts = official.alerts
+        imd_meta = official.imd
 
     derived = generate_derived_alerts(weather_result, forecast, air_quality)
 
@@ -40,4 +44,12 @@ async def get_alerts(
     # personalization bury it.
     all_alerts = official_alerts + derived
 
-    return AlertsResponse(location_name=weather_result.location.name, alerts=all_alerts, has_severe=has_severe_alert(all_alerts))
+    return AlertsResponse(
+        location_name=weather_result.location.name,
+        alerts=all_alerts,
+        has_severe=has_severe_alert(all_alerts),
+        imd_status=imd_meta.status if imd_meta else None,
+        imd_district=imd_meta.district_name if imd_meta else None,
+        imd_district_id=imd_meta.district_id if imd_meta else None,
+        imd_state=imd_meta.state if imd_meta else None,
+    )

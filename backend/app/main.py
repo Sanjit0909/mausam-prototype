@@ -74,7 +74,7 @@ async def health() -> dict:
             },
             "weather": {
                 "chain": ["imd", "open-meteo", "openweathermap", "weatherstack"],
-                "imd_configured": current.has_imd_key,
+                "imd_configured": current.has_imd_credentials,
                 "openweathermap_configured": current.has_owm_key,
                 "weatherstack_configured": current.has_weatherstack_key,
             },
@@ -85,7 +85,7 @@ async def health() -> dict:
             },
             "alerts": {
                 "chain": ["imd", "nws-us-only", "derived"],
-                "imd_configured": current.has_imd_key,
+                "imd_configured": current.has_imd_credentials,
             },
         },
     }

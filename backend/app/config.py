@@ -25,8 +25,12 @@ class Settings(BaseSettings):
 
     stormglass_api_key: str = ""
 
+    # IMD weather APIs use IMD_BASE_URL; JWT is fetched from a separate oauth URL (not under /api/v1).
     imd_api_key: str = ""
     imd_base_url: str = "https://api.imd.gov.in/api/v1"
+    imd_email: str = ""
+    imd_password: str = ""
+    imd_oauth_token_url: str = "https://api.imd.gov.in/api/oauth/token.php"
 
     incois_api_key: str = ""
 
@@ -68,7 +72,17 @@ class Settings(BaseSettings):
 
     @property
     def has_imd_key(self) -> bool:
+        """True when API key is present (legacy health field). Prefer has_imd_credentials for live calls."""
         return bool(self.imd_api_key.strip())
+
+    @property
+    def has_imd_credentials(self) -> bool:
+        """IMD live calls need API key + portal email/password for JWT generation."""
+        return bool(
+            self.imd_api_key.strip()
+            and self.imd_email.strip()
+            and self.imd_password.strip()
+        )
 
     @property
     def has_incois_key(self) -> bool:
