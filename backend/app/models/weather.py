@@ -49,6 +49,11 @@ class WeatherResponse(BaseModel):
     current: CurrentWeather
     source: str = "open-meteo"
     is_demo: bool = False
+    # Optional IMD observation provenance (ignored by older clients).
+    provider_label: str | None = None
+    observation_station: str | None = None
+    observation_station_id: str | None = None
+    station_distance_km: float | None = None
 
 
 class ForecastResponse(BaseModel):

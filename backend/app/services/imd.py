@@ -7,9 +7,11 @@ Verified auth (IMD portal / live Azure tests):
   Authorization: Bearer <JWT from POST https://api.imd.gov.in/api/oauth/token.php>
 
 Current-weather flow for /api/weather (lat, lon, name):
-1. Load stations from official `cityforecastloc` (Latitude/Longitude + Station_Code).
-2. Pick nearest station via haversine (no invented IDs).
-3. Fetch observation from official `current_wx?id=<Station_Code>`.
+1. Load `cityforecastloc` (coordinates + Station_Name / Station_Code).
+2. Load bulk `current_wx` (valid observation Station Id + Station name; no lat/lon).
+3. Join only on exact normalized station names (no fuzzy match; no invented IDs).
+4. Pick nearest *verified* station by haversine.
+5. Fetch `current_wx?id=<verified Station Id>`.
 
 Never logs API keys, passwords, JWTs, or Authorization headers.
 """
@@ -343,9 +345,32 @@ async def _imd_get(path: str, params: dict[str, Any] | None = None) -> Any:
         raise UpstreamAPIError("imd", "IMD returned invalid JSON") from exc
 
 
-def _station_id(row: dict[str, Any]) -> str | None:
-    value = _pick(row, "Station_Code", "Station Id", "Station_Id", "StationId", "id", "Id", "ID")
+def _normalize_station_name(name: str) -> str:
+    """Exact-match key: uppercase, trim, collapse whitespace. No fuzzy aliases."""
+    return re.sub(r"\s+", " ", (name or "").upper().strip())
+
+
+def _forecast_station_code(row: dict[str, Any]) -> str | None:
+    value = _pick(row, "Station_Code", "Station_Code ", "station_code")
     if value is None:
+        return None
+    return str(value).strip() or None
+
+
+def _current_station_id(row: dict[str, Any]) -> str | None:
+    value = _pick(row, "Station Id", "Station_Id", "StationId")
+    if value is None:
+        return None
+    return str(value).strip() or None
+
+
+def _station_id(row: dict[str, Any]) -> str | None:
+    """Best-effort id from either catalogue (tests / response matching)."""
+    found = _current_station_id(row) or _forecast_station_code(row)
+    if found:
+        return found
+    value = _pick(row, "id", "Id", "ID")
+    if value is None or value == "":
         return None
     return str(value).strip()
 
@@ -358,64 +383,143 @@ def _station_coords(row: dict[str, Any]) -> tuple[float, float] | None:
     return lat, lon
 
 
-async def _load_station_mapping() -> list[dict[str, Any]]:
-    """Official city/station list with coordinates from cityforecastloc."""
+def _unique_name_index(
+    rows: list[dict[str, Any]],
+    *,
+    id_fn,
+    name_keys: tuple[str, ...],
+) -> dict[str, dict[str, Any]]:
+    """Map normalized name -> unique row. Ambiguous names are omitted (never guess)."""
+    by_name: dict[str, dict[str, Any]] = {}
+    ambiguous: set[str] = set()
+    for row in rows:
+        sid = id_fn(row)
+        name_raw = _pick(row, *name_keys)
+        if sid is None or name_raw in (None, ""):
+            continue
+        key = _normalize_station_name(str(name_raw))
+        if not key:
+            continue
+        entry = {"id": sid, "name": str(name_raw).strip(), "row": row}
+        if key in by_name and by_name[key]["id"] != sid:
+            ambiguous.add(key)
+            continue
+        by_name[key] = entry
+    for key in ambiguous:
+        by_name.pop(key, None)
+    return by_name
+
+
+def build_verified_observation_stations(
+    forecast_rows: list[dict[str, Any]],
+    current_wx_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Join cityforecastloc coords to current_wx Station Ids via exact normalized names."""
+    wx_by_name = _unique_name_index(
+        current_wx_rows,
+        id_fn=_current_station_id,
+        name_keys=("Station", "Station_Name", "name"),
+    )
+    verified: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+    for row in forecast_rows:
+        coords = _station_coords(row)
+        name_raw = _pick(row, "Station_Name", "Station", "name", "City")
+        if not coords or name_raw in (None, ""):
+            continue
+        key = _normalize_station_name(str(name_raw))
+        wx = wx_by_name.get(key)
+        if not wx:
+            continue
+        obs_id = wx["id"]
+        if obs_id in seen_ids:
+            continue
+        seen_ids.add(obs_id)
+        verified.append(
+            {
+                "id": obs_id,
+                "forecast_code": _forecast_station_code(row) or "",
+                "name": wx["name"],
+                "forecast_name": str(name_raw).strip(),
+                "lat": coords[0],
+                "lon": coords[1],
+            }
+        )
+    return verified
+
+
+async def _load_verified_observation_stations() -> list[dict[str, Any]]:
+    """Cached join of cityforecastloc (coords) ∩ current_wx (valid observation ids)."""
 
     async def _fetch() -> list[dict[str, Any]]:
+        forecast_rows: list[dict[str, Any]] = []
         for path in ("cityforecastloc", "cityforecast_mapping"):
             try:
                 payload = await _imd_get(path)
             except UpstreamAPIError:
                 logger.warning("[IMD] mapping endpoint unavailable path=%s", path)
                 continue
-            rows = _as_list(payload)
-            usable = []
-            for row in rows:
-                sid = _station_id(row)
-                coords = _station_coords(row)
-                if not sid or not coords:
-                    continue
-                usable.append(
-                    {
-                        "id": sid,
-                        "name": str(_pick(row, "Station_Name", "Station", "name", "City") or sid),
-                        "lat": coords[0],
-                        "lon": coords[1],
-                    }
-                )
-            if usable:
-                logger.info("[IMD] loaded %d stations from %s", len(usable), path)
-                return usable
-        raise UpstreamAPIError("imd", "IMD station mapping unavailable")
+            forecast_rows = _as_list(payload)
+            if forecast_rows:
+                logger.info("[IMD] loaded %d forecast-location rows from %s", len(forecast_rows), path)
+                break
+        if not forecast_rows:
+            raise UpstreamAPIError("imd", "IMD station mapping unavailable")
 
-    return await _mapping_cache.get_or_set("imd:station-mapping", _fetch)
+        try:
+            wx_payload = await _imd_get("current_wx")
+        except UpstreamAPIError as exc:
+            logger.warning("[IMD] bulk current_wx catalogue unavailable")
+            raise UpstreamAPIError("imd", "IMD current observation catalogue unavailable") from exc
+        wx_rows = _as_list(wx_payload)
+        if not wx_rows:
+            raise UpstreamAPIError("imd", "IMD current observation catalogue empty")
+
+        verified = build_verified_observation_stations(forecast_rows, wx_rows)
+        if not verified:
+            raise UpstreamAPIError("imd", "No verified IMD observation stations after name join")
+        logger.info(
+            "[IMD] verified observation stations=%d (forecast=%d current_wx=%d)",
+            len(verified),
+            len(forecast_rows),
+            len(wx_rows),
+        )
+        return verified
+
+    return await _mapping_cache.get_or_set("imd:verified-obs-stations", _fetch)
 
 
-async def _nearest_station(lat: float, lon: float) -> dict[str, Any]:
-    stations = await _load_station_mapping()
+async def _nearest_verified_station(lat: float, lon: float) -> dict[str, Any]:
+    stations = await _load_verified_observation_stations()
     best: dict[str, Any] | None = None
     best_km = float("inf")
     for station in stations:
         dist = _haversine_km(lat, lon, station["lat"], station["lon"])
         if dist < best_km:
             best_km = dist
-            best = station
+            best = {**station, "distance_km": dist}
     if best is None or best_km > _MAX_STATION_DISTANCE_KM:
         logger.warning(
-            "[IMD] no station within %.0fkm of lat=%.4f lon=%.4f (nearest=%.1fkm)",
+            "[IMD] no verified observation station within %.0fkm of lat=%.4f lon=%.4f (nearest=%.1fkm)",
             _MAX_STATION_DISTANCE_KM,
             lat,
             lon,
             best_km if best else -1,
         )
-        raise UpstreamAPIError("imd", "No nearby IMD station for requested coordinates")
+        raise UpstreamAPIError("imd", "No nearby IMD observation station for requested coordinates")
     logger.info(
-        "[IMD] nearest station id=%s name=%s distance_km=%.1f",
+        "[IMD] nearest verified station id=%s name=%s distance_km=%.1f forecast_code=%s",
         best["id"],
         best["name"],
         best_km,
+        best.get("forecast_code") or "",
     )
     return best
+
+
+# Back-compat alias used by older tests / call sites.
+async def _nearest_station(lat: float, lon: float) -> dict[str, Any]:
+    return await _nearest_verified_station(lat, lon)
 
 
 def _observed_at(row: dict[str, Any]) -> str:
@@ -436,7 +540,14 @@ def _observed_at(row: dict[str, Any]) -> str:
 
 
 def _normalize_current(
-    row: dict[str, Any], lat: float, lon: float, name: str | None, station_name: str
+    row: dict[str, Any],
+    lat: float,
+    lon: float,
+    name: str | None,
+    station_name: str,
+    *,
+    station_id: str | None = None,
+    station_distance_km: float | None = None,
 ) -> WeatherResponse:
     temp = _as_float(_pick(row, "Temperature", "temperature", "Temp", "CURR_TEMP"))
     if temp is None:
@@ -449,6 +560,8 @@ def _normalize_current(
     wx_code = _as_int(_pick(row, "Weather Code", "Weather_Code", "weather_code", "WeatherCode", "WEATHER_CODE"))
     condition, group = _imd_condition(wx_code)
     feels = _as_float(_pick(row, "Feel Like", "feels_like", "Feels_Like")) or temp
+    obs_name = str(_pick(row, "Station", "Station_Name") or station_name or "").strip() or station_name
+    obs_id = _current_station_id(row) or station_id
 
     current = CurrentWeather(
         temperature=temp,
@@ -471,7 +584,8 @@ def _normalize_current(
 
     return WeatherResponse(
         location=LocationInfo(
-            name=name or station_name or "Selected location",
+            # Keep the user's requested place name; observation station is separate metadata.
+            name=name or "Selected location",
             lat=lat,
             lon=lon,
             timezone="Asia/Kolkata",
@@ -479,6 +593,10 @@ def _normalize_current(
         current=current,
         source="imd",
         is_demo=False,
+        provider_label="IMD – Official Current Weather",
+        observation_station=obs_name or None,
+        observation_station_id=obs_id,
+        station_distance_km=round(station_distance_km, 3) if station_distance_km is not None else None,
     )
 
 
@@ -489,7 +607,7 @@ async def get_current_weather(lat: float, lon: float, name: str | None = None) -
     cache_key = f"imd:current:{location_key(lat, lon)}"
 
     async def _fetch() -> WeatherResponse:
-        station = await _nearest_station(lat, lon)
+        station = await _nearest_verified_station(lat, lon)
         payload = await _imd_get("current_wx", params={"id": station["id"]})
         rows = _as_list(payload)
         if not rows:
@@ -498,12 +616,20 @@ async def get_current_weather(lat: float, lon: float, name: str | None = None) -
 
         chosen = rows[0]
         for row in rows:
-            sid = _station_id(row)
+            sid = _current_station_id(row) or _station_id(row)
             if sid and sid == str(station["id"]):
                 chosen = row
                 break
 
-        return _normalize_current(chosen, lat, lon, name, station["name"])
+        return _normalize_current(
+            chosen,
+            lat,
+            lon,
+            name,
+            station["name"],
+            station_id=str(station["id"]),
+            station_distance_km=float(station.get("distance_km") or 0.0),
+        )
 
     try:
         return await _obs_cache.get_or_set(cache_key, _fetch)
