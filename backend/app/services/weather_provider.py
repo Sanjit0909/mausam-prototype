@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 async def get_current_weather(lat: float, lon: float, name: str | None = None) -> WeatherResponse:
-    if settings.has_imd_key:
+    if settings.has_imd_credentials:
         started = time.monotonic()
         try:
             result = await imd.get_current_weather(lat, lon, name)
