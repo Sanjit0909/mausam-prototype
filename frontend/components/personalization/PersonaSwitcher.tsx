@@ -51,14 +51,11 @@ export function PersonaSwitcher() {
   const { updatePreferences } = usePreferences();
   const { t } = useLanguage();
   const [active, setActive] = useState<string | null>(null);
-  const [switching, setSwitching] = useState(false);
 
   const handleSwitch = async (persona: DemoPersona) => {
-    setSwitching(true);
     setActive(persona.key);
     setLocation(persona.location);
-    await updatePreferences({ interests: [persona.key] });
-    setSwitching(false);
+    void updatePreferences({ interests: [persona.key], preferred_location: persona.location });
   };
 
   return (
@@ -75,8 +72,7 @@ export function PersonaSwitcher() {
             <button
               key={persona.key}
               onClick={() => handleSwitch(persona)}
-              disabled={switching}
-              className={`flex min-h-11 items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium transition-colors disabled:opacity-60 ${
+              className={`flex min-h-11 items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium transition-colors ${
                 isActive
                   ? "border-sky-400/60 bg-sky-500/15 text-sky-300"
                   : "border-white/10 bg-white/[0.03] text-mist-300 hover:bg-white/10"

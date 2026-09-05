@@ -1,18 +1,33 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CloudSun, Loader2, Lock, Mail } from "lucide-react";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (searchParams.get("oauth") === "1") {
+      setError("Google sign-in didn’t work. Please try again.");
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace(searchParams.get("next") || "/home");
+    }
+  }, [authLoading, user, router, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +96,14 @@ function LoginForm() {
               Log In
             </button>
           </form>
+
+          <div className="my-5 flex items-center gap-3 text-[11px] uppercase tracking-wide text-mist-500">
+            <span className="h-px flex-1 bg-white/10" />
+            or
+            <span className="h-px flex-1 bg-white/10" />
+          </div>
+
+          <GoogleAuthButton label="Sign in with Google" />
 
           <p className="mt-6 text-center text-sm text-mist-400">
             Don&apos;t have an account?{" "}

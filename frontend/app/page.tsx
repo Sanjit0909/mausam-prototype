@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { LanguageToggle } from "@/components/common/LanguageToggle";
+import { OAuthLandingRedirect } from "@/components/auth/OAuthLandingRedirect";
 import {
   ArrowRight,
   Bike,
@@ -48,6 +50,9 @@ const FEATURES = [
 export default function LandingPage() {
   return (
     <div className="min-h-screen">
+      <Suspense fallback={null}>
+        <OAuthLandingRedirect />
+      </Suspense>
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 md:px-10">
         <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 shadow-lg shadow-sky-500/20">

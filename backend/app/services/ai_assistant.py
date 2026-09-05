@@ -22,9 +22,20 @@ logger = logging.getLogger(__name__)
 _RESPONSE_CACHE_TTL = 120
 _response_cache: dict[str, tuple[float, tuple[str, str]]] = {}
 
-_DEEPSEEK_TIMEOUT = 12.0
-_GEMINI_TIMEOUT = 12.0
-_OPENROUTER_TIMEOUT = 18.0
+# Keep per-provider waits short so a hung primary does not stall the chat UI.
+_DEEPSEEK_TIMEOUT = 5.0
+_GEMINI_TIMEOUT = 5.0
+_OPENROUTER_TIMEOUT = 8.0
+_PROVIDER_COOLDOWN = 45.0
+_provider_fail_until: dict[str, float] = {}
+
+
+def _provider_available(name: str) -> bool:
+    return time.monotonic() >= _provider_fail_until.get(name, 0)
+
+
+def _mark_provider_failure(name: str) -> None:
+    _provider_fail_until[name] = time.monotonic() + _PROVIDER_COOLDOWN
 
 
 def _cache_key(message: str, lat: float, lon: float, interests: list[str]) -> str:
@@ -272,7 +283,7 @@ async def generate_reply(
 
     context = _build_context(weather, forecast, air_quality, interests)
 
-    if settings.has_deepseek_key:
+    if settings.has_deepseek_key and _provider_available("deepseek"):
         started = time.monotonic()
         try:
             reply = await _call_deepseek(message, context, interests, history)
@@ -281,9 +292,10 @@ async def generate_reply(
             _response_cache[cache_key] = (time.monotonic(), result)
             return result
         except Exception as exc:  # noqa: BLE001 - any DeepSeek failure silently degrades
+            _mark_provider_failure("deepseek")
             logger.warning("[AI] DeepSeek failed (%.1fs) - falling back to Gemini: %s", time.monotonic() - started, repr(exc))
 
-    if settings.has_gemini_key:
+    if settings.has_gemini_key and _provider_available("gemini"):
         started = time.monotonic()
         try:
             reply = await _call_gemini(message, context, history)
@@ -292,9 +304,10 @@ async def generate_reply(
             _response_cache[cache_key] = (time.monotonic(), result)
             return result
         except Exception as exc:  # noqa: BLE001 - any Gemini failure silently degrades
+            _mark_provider_failure("gemini")
             logger.warning("[AI] Gemini failed (%.1fs) - falling back to OpenRouter: %s", time.monotonic() - started, repr(exc))
 
-    if settings.has_openrouter_key:
+    if settings.has_openrouter_key and _provider_available("openrouter"):
         started = time.monotonic()
         try:
             reply = await _call_openrouter(message, context, interests, history)
@@ -303,6 +316,7 @@ async def generate_reply(
             _response_cache[cache_key] = (time.monotonic(), result)
             return result
         except Exception as exc:  # noqa: BLE001 - any OpenRouter failure silently degrades
+            _mark_provider_failure("openrouter")
             logger.warning("[AI] OpenRouter failed (%.1fs) - falling back to rule engine: %s", time.monotonic() - started, repr(exc))
 
     reply = _fallback_reply(message, weather, forecast, air_quality)

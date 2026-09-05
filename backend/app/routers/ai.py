@@ -9,27 +9,29 @@ from ..services.weather_provider import get_current_weather, get_forecast
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 
+# Forecast/AQI enrich the answer but must not block the first token of a reply.
+_CONTEXT_WAIT = 0.6
+
+
+async def _optional(task: asyncio.Task):
+    try:
+        return await asyncio.wait_for(asyncio.shield(task), timeout=_CONTEXT_WAIT)
+    except (TimeoutError, asyncio.CancelledError, Exception):
+        return None
+
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest) -> ChatResponse:
-    # Fetch weather/forecast/AQI concurrently instead of one-by-one - roughly a 3x latency
-    # cut for this endpoint, since each is an independent external API call.
-    weather_result, forecast_result, air_quality_result = await asyncio.gather(
-        get_current_weather(request.lat, request.lon, request.location_name),
-        get_forecast(request.lat, request.lon, days=3, name=request.location_name),
-        get_air_quality(request.lat, request.lon, request.location_name),
-        return_exceptions=True,
-    )
+    weather_task = asyncio.create_task(get_current_weather(request.lat, request.lon, request.location_name))
+    forecast_task = asyncio.create_task(get_forecast(request.lat, request.lon, days=3, name=request.location_name))
+    air_quality_task = asyncio.create_task(get_air_quality(request.lat, request.lon, request.location_name))
 
-    if isinstance(weather_result, BaseException):
-        raise weather_result  # weather is load-bearing; forecast/AQI degrade gracefully below
-
-    forecast = None if isinstance(forecast_result, BaseException) else forecast_result
-    air_quality = None if isinstance(air_quality_result, BaseException) else air_quality_result
+    weather = await weather_task
+    forecast, air_quality = await asyncio.gather(_optional(forecast_task), _optional(air_quality_task))
 
     reply, source = await generate_reply(
         message=request.message,
-        weather=weather_result,
+        weather=weather,
         forecast=forecast,
         air_quality=air_quality,
         interests=request.interests,

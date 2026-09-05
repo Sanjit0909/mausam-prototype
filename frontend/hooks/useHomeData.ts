@@ -1,10 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { getAlerts } from "@/lib/api/alerts";
-import { getAirQuality, getAstronomy, getMarine } from "@/lib/api/environment";
-import { getInsights } from "@/lib/api/insights";
-import { getCurrentWeather, getForecast } from "@/lib/api/weather";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { getHomeBundle } from "@/lib/api/home";
 import { getInteractionQueryString } from "@/hooks/useInteractionTracking";
 import type {
   AirQualityResponse,
@@ -28,23 +25,28 @@ interface HomeData {
 
 interface UseHomeDataResult extends HomeData {
   loading: boolean;
+  refreshing: boolean;
   error: string | null;
   refresh: () => void;
 }
 
+const EMPTY: HomeData = {
+  weather: null,
+  forecast: null,
+  airQuality: null,
+  alerts: null,
+  insights: null,
+  astronomy: null,
+  marine: null,
+};
+
 export function useHomeData(lat: number, lon: number, name: string | undefined, interests: string[]): UseHomeDataResult {
-  const [data, setData] = useState<HomeData>({
-    weather: null,
-    forecast: null,
-    airQuality: null,
-    alerts: null,
-    insights: null,
-    astronomy: null,
-    marine: null,
-  });
+  const [data, setData] = useState<HomeData>(EMPTY);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
+  const hasDataRef = useRef(false);
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
 
@@ -53,40 +55,38 @@ export function useHomeData(lat: number, lon: number, name: string | undefined, 
     const controller = new AbortController();
 
     async function load() {
-      setLoading(true);
+      if (hasDataRef.current) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
 
-      const [weatherRes, forecastRes, airQualityRes, alertsRes, insightsRes, astronomyRes, marineRes] = await Promise.allSettled([
-        getCurrentWeather(lat, lon, name, controller.signal),
-        getForecast(lat, lon, 7, name, controller.signal),
-        getAirQuality(lat, lon, name, controller.signal),
-        getAlerts(lat, lon, name, controller.signal),
-        getInsights(lat, lon, interests, name, controller.signal, getInteractionQueryString()),
-        getAstronomy(lat, lon, name, controller.signal),
-        getMarine(lat, lon, name, controller.signal),
-      ]);
-
-      if (cancelled) return;
-
-      const weather = weatherRes.status === "fulfilled" ? weatherRes.value : null;
-
-      // Weather is the one truly load-bearing call - everything else degrades gracefully.
-      if (!weather) {
-        setError("Unable to load live weather data right now. Please try again.");
-        setLoading(false);
-        return;
+      try {
+        const bundle = await getHomeBundle(lat, lon, interests, name, controller.signal, getInteractionQueryString());
+        if (cancelled) return;
+        hasDataRef.current = true;
+        setData({
+          weather: bundle.weather,
+          forecast: bundle.forecast,
+          airQuality: bundle.air_quality,
+          alerts: bundle.alerts,
+          insights: bundle.insights,
+          astronomy: bundle.astronomy,
+          marine: bundle.marine,
+        });
+        setError(null);
+      } catch {
+        if (cancelled) return;
+        if (!hasDataRef.current) {
+          setError("Unable to load live weather data right now. Please try again.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
-
-      setData({
-        weather,
-        forecast: forecastRes.status === "fulfilled" ? forecastRes.value : null,
-        airQuality: airQualityRes.status === "fulfilled" ? airQualityRes.value : null,
-        alerts: alertsRes.status === "fulfilled" ? alertsRes.value : null,
-        insights: insightsRes.status === "fulfilled" ? insightsRes.value : null,
-        astronomy: astronomyRes.status === "fulfilled" ? astronomyRes.value : null,
-        marine: marineRes.status === "fulfilled" ? marineRes.value : null,
-      });
-      setLoading(false);
     }
 
     load();
@@ -96,5 +96,5 @@ export function useHomeData(lat: number, lon: number, name: string | undefined, 
     };
   }, [lat, lon, name, interests.join(","), tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { ...data, loading, error, refresh };
+  return { ...data, loading, refreshing, error, refresh };
 }

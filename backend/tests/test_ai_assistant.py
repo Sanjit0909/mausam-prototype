@@ -33,6 +33,7 @@ async def _fail(*_args, **_kwargs):
 
 @pytest.mark.asyncio
 async def test_chain_uses_deepseek_when_it_succeeds(monkeypatch):
+    ai_assistant._provider_fail_until.clear()
     monkeypatch.setattr(ai_assistant.settings, "deepseek_api_key", "k")
     monkeypatch.setattr(ai_assistant.settings, "gemini_api_key", "k")
     monkeypatch.setattr(ai_assistant.settings, "openrouter_api_key", "k")
@@ -54,6 +55,7 @@ async def test_chain_uses_deepseek_when_it_succeeds(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_chain_falls_to_gemini_then_openrouter(monkeypatch):
+    ai_assistant._provider_fail_until.clear()
     monkeypatch.setattr(ai_assistant.settings, "deepseek_api_key", "k")
     monkeypatch.setattr(ai_assistant.settings, "gemini_api_key", "k")
     monkeypatch.setattr(ai_assistant.settings, "openrouter_api_key", "k")
@@ -75,6 +77,7 @@ async def test_chain_falls_to_gemini_then_openrouter(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_chain_falls_to_rule_engine_when_all_llms_fail(monkeypatch):
+    ai_assistant._provider_fail_until.clear()
     monkeypatch.setattr(ai_assistant.settings, "deepseek_api_key", "k")
     monkeypatch.setattr(ai_assistant.settings, "gemini_api_key", "k")
     monkeypatch.setattr(ai_assistant.settings, "openrouter_api_key", "k")

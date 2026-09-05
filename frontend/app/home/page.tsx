@@ -35,7 +35,7 @@ export default function HomePage() {
   const { location } = useLocation();
   const { preferences, loading: prefsLoading, hasOnboarded } = usePreferences();
   const { t } = useLanguage();
-  const { weather, forecast, airQuality, alerts, insights, astronomy, marine, loading, error, refresh } = useHomeData(
+  const { weather, forecast, airQuality, alerts, insights, astronomy, marine, loading, refreshing, error, refresh } = useHomeData(
     location.lat,
     location.lon,
     locationLabel(location),
@@ -163,7 +163,11 @@ export default function HomePage() {
 
       <PersonaSwitcher />
 
-      {loading && (
+      {refreshing && weather && (
+        <p className="text-xs text-mist-500">Updating personalized cards…</p>
+      )}
+
+      {loading && !weather && (
         <div className="space-y-6">
           <HeroSkeleton />
           <GridSkeleton />
@@ -171,9 +175,9 @@ export default function HomePage() {
         </div>
       )}
 
-      {!loading && error && <ErrorState message={error || t("home.loadError")} onRetry={refresh} />}
+      {error && !weather && <ErrorState message={error || t("home.loadError")} onRetry={refresh} />}
 
-      {!loading && !error && weather && current && (
+      {weather && current && (
         <>
           {alerts && alerts.alerts.length > 0 && <AlertBanner alerts={alerts.alerts} />}
 

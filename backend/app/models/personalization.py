@@ -1,5 +1,9 @@
 from pydantic import BaseModel
 
+from .alerts import AlertsResponse
+from .environment import AirQualityResponse, AstronomyResponse, MarineResponse
+from .weather import ForecastResponse, WeatherResponse
+
 INTERESTS = (
     "health",
     "outdoor_fitness",
@@ -35,3 +39,14 @@ class InsightsResponse(BaseModel):
     card_reasons: dict[str, str] = {}  # card key -> "why this?" reason
     insights: list[PersonalizedInsight]
     recommendations: list[RecommendationCard]
+
+
+class HomeResponse(BaseModel):
+    """Single-request homepage payload so the UI does not wait on 7 separate RTTs."""
+    weather: WeatherResponse
+    forecast: ForecastResponse | None = None
+    air_quality: AirQualityResponse | None = None
+    alerts: AlertsResponse | None = None
+    insights: InsightsResponse
+    astronomy: AstronomyResponse | None = None
+    marine: MarineResponse | None = None

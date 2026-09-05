@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 
 from .config import get_settings, settings
 from .core.http_client import UpstreamAPIError, close_http_client
-from .routers import air_quality, ai, alerts, astronomy, forecast, historical, insights, location, marine, weather
+from .routers import air_quality, ai, alerts, astronomy, forecast, historical, home, insights, location, marine, weather
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("mausam")
@@ -91,6 +91,7 @@ async def health() -> dict:
     }
 
 
+app.include_router(home.router)
 app.include_router(weather.router)
 app.include_router(forecast.router)
 app.include_router(air_quality.router)

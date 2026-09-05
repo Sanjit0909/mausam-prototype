@@ -1,19 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CloudSun, Loader2, Lock, Mail, User } from "lucide-react";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SignupPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmationSent, setConfirmationSent] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/home");
+    }
+  }, [authLoading, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,6 +142,14 @@ export default function SignupPage() {
               Create Account
             </button>
           </form>
+
+          <div className="my-5 flex items-center gap-3 text-[11px] uppercase tracking-wide text-mist-500">
+            <span className="h-px flex-1 bg-white/10" />
+            or
+            <span className="h-px flex-1 bg-white/10" />
+          </div>
+
+          <GoogleAuthButton label="Continue with Google" />
 
           <p className="mt-6 text-center text-sm text-mist-400">
             Already have an account?{" "}

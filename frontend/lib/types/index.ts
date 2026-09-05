@@ -197,6 +197,16 @@ export interface InsightsResponse {
   recommendations: RecommendationCard[];
 }
 
+export interface HomeBundle {
+  weather: WeatherResponse;
+  forecast: ForecastResponse | null;
+  air_quality: AirQualityResponse | null;
+  alerts: AlertsResponse | null;
+  insights: InsightsResponse;
+  astronomy: AstronomyResponse | null;
+  marine: MarineResponse | null;
+}
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
