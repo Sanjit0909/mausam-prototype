@@ -36,5 +36,6 @@ async def chat(request: ChatRequest) -> ChatResponse:
         air_quality=air_quality,
         interests=request.interests,
         history=request.history,
+        locale=request.locale or "en",
     )
     return ChatResponse(reply=reply, source=source)

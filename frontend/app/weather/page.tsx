@@ -54,7 +54,7 @@ export default function WeatherDetailsPage() {
             <WeatherMetricCard
               icon={Thermometer}
               label={t("weather.feelsLike")}
-              value={`${weather.current.feels_like.toFixed(0)}\u00b0`}
+              value={`${weather.current.feels_like.toFixed(0)}°`}
             />
             <WeatherMetricCard icon={Droplets} label={t("home.humidity")} value={formatPercent(weather.current.humidity)} />
             <WeatherMetricCard

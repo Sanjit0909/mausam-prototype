@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 from .alerts import AlertsResponse
 from .environment import AirQualityResponse, AstronomyResponse, MarineResponse
+from .persona import PersonaHomePayload
 from .weather import ForecastResponse, WeatherResponse
 
 INTERESTS = (
@@ -50,3 +51,4 @@ class HomeResponse(BaseModel):
     insights: InsightsResponse
     astronomy: AstronomyResponse | None = None
     marine: MarineResponse | None = None
+    persona: PersonaHomePayload | None = None

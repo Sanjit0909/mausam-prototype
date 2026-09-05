@@ -92,8 +92,8 @@ export function WeatherChart({ hourly, variant = "temperature", limit = 24 }: We
             tickLine={false}
             interval={2}
           />
-          <YAxis tick={{ fill: "#8b9bc2", fontSize: 11 }} axisLine={false} tickLine={false} width={36} unit="\u00b0" />
-          <Tooltip content={<ChartTooltip suffix="\u00b0" locale={locale} />} cursor={{ stroke: "rgba(255,255,255,0.15)" }} />
+          <YAxis tick={{ fill: "#8b9bc2", fontSize: 11 }} axisLine={false} tickLine={false} width={36} unit="°" />
+          <Tooltip content={<ChartTooltip suffix="°" locale={locale} />} cursor={{ stroke: "rgba(255,255,255,0.15)" }} />
           <Area type="monotone" dataKey="temperature" stroke="#4fc3f7" strokeWidth={2} fill="url(#tempGradient)" />
         </AreaChart>
       </ResponsiveContainer>

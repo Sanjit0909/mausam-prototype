@@ -35,8 +35,7 @@ export function formatTime(iso: string | null | undefined, timezone?: string | n
 }
 
 export function formatDayLabel(dateStr: string, index: number, locale: string = "en"): string {
-  if (index === 0) return "Today";
-  if (index === 1) return "Tomorrow";
+  // Callers should prefer translated Today/Tomorrow for index 0/1; this is weekday fallback.
   try {
     return new Intl.DateTimeFormat(locale === "hi" ? "hi-IN" : "en-US", { weekday: "short" }).format(new Date(dateStr));
   } catch {
@@ -53,13 +52,16 @@ export function formatHourLabel(iso: string, locale: string = "en"): string {
   }
 }
 
-export function uvCategory(uv: number | null | undefined): { label: string; color: string } {
-  if (uv === null || uv === undefined) return { label: "--", color: "text-mist-400" };
-  if (uv < 3) return { label: "Low", color: "text-emerald-400" };
-  if (uv < 6) return { label: "Moderate", color: "text-amber-300" };
-  if (uv < 8) return { label: "High", color: "text-amber-500" };
-  if (uv < 11) return { label: "Very High", color: "text-rose-400" };
-  return { label: "Extreme", color: "text-rose-600" };
+export function uvCategory(uv: number | null | undefined): {
+  labelKey: "common.uv.low" | "common.uv.moderate" | "common.uv.high" | "common.uv.veryHigh" | "common.uv.extreme" | null;
+  color: string;
+} {
+  if (uv === null || uv === undefined) return { labelKey: null, color: "text-mist-400" };
+  if (uv < 3) return { labelKey: "common.uv.low", color: "text-emerald-400" };
+  if (uv < 6) return { labelKey: "common.uv.moderate", color: "text-amber-300" };
+  if (uv < 8) return { labelKey: "common.uv.high", color: "text-amber-500" };
+  if (uv < 11) return { labelKey: "common.uv.veryHigh", color: "text-rose-400" };
+  return { labelKey: "common.uv.extreme", color: "text-rose-600" };
 }
 
 export function aqiColor(aqi: number | null | undefined): string {
@@ -111,4 +113,24 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
  * literal value the backend reported. */
 export function providerDisplayName(source: string): string {
   return PROVIDER_DISPLAY_NAMES[source.toLowerCase()] ?? source;
+}
+
+/** Localize presentation labels for known advisory/provider strings. Keeps IMD/Open-Meteo brand forms. */
+export function localizeProviderLabel(
+  provider: string,
+  t: (key: "common.advisory" | "common.imdOfficialWarning" | "common.imdNowcast" | "common.imdCurrentWeather") => string
+): string {
+  const raw = (provider || "").trim();
+  const key = raw.toLowerCase();
+  if (!raw) return raw;
+  if (key === "derived" || key === "mausam advisory" || key.includes("mausam advisory")) {
+    return t("common.advisory");
+  }
+  if (key.includes("nowcast")) return t("common.imdNowcast");
+  if (key.includes("current weather")) return t("common.imdCurrentWeather");
+  if (key.includes("official warning") || (key.includes("imd") && key.includes("warning"))) {
+    return t("common.imdOfficialWarning");
+  }
+  if (key === "imd") return "IMD";
+  return PROVIDER_DISPLAY_NAMES[key] ?? raw;
 }

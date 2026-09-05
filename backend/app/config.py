@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     imd_email: str = ""
     imd_password: str = ""
     imd_oauth_token_url: str = "https://api.imd.gov.in/api/oauth/token.php"
+    # Optional future path for official crop-stage Agromet/Meghdoot advisory (not cityforecast).
+    # Leave empty until IMD grants a dedicated advisory endpoint — do not invent advisories.
+    imd_agromet_advisory_path: str = ""
 
     incois_api_key: str = ""
 

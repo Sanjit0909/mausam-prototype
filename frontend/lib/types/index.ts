@@ -44,6 +44,10 @@ export interface WeatherResponse {
   current: CurrentWeather;
   source: string;
   is_demo: boolean;
+  provider_label?: string | null;
+  observation_station?: string | null;
+  observation_station_id?: string | null;
+  station_distance_km?: number | null;
 }
 
 export interface HourlyPoint {
@@ -197,6 +201,74 @@ export interface InsightsResponse {
   recommendations: RecommendationCard[];
 }
 
+export type PersonaId =
+  | "farmer"
+  | "runner"
+  | "traveller"
+  | "marine"
+  | "family"
+  | "health_vulnerable"
+  | "disaster";
+
+export type ProvenanceKind = "official" | "derived" | "estimated" | "unavailable";
+
+export interface FarmerProfile {
+  crop: string;
+  crop_stage: string;
+  sowing_date?: string | null;
+  irrigation_type?: string | null;
+  field_size_ha?: number | null;
+}
+
+export interface PersonaProfile {
+  primary_persona?: PersonaId | null;
+  farmer?: FarmerProfile | null;
+}
+
+export interface PersonaCard {
+  id: string;
+  title: string;
+  summary: string;
+  detail: string;
+  recommendation: string;
+  supporting_data: Record<string, unknown>;
+  provenance: ProvenanceKind;
+  source_label: string;
+  issued_at?: string | null;
+  updated_at?: string | null;
+  reason: string;
+  label: string;
+  severity?: string | null;
+  accent?: string | null;
+}
+
+export interface AgrometAdvisoryStatus {
+  available: boolean;
+  status: string;
+  message: string;
+  advisory_text?: string | null;
+  weather_condition?: string | null;
+  recommendations: string[];
+  crop_relevance?: string | null;
+  crop_stage_relevance?: string | null;
+  language?: string | null;
+  source_label: string;
+  issued_at?: string | null;
+  updated_at?: string | null;
+  portal_url?: string | null;
+}
+
+export interface PersonaHomePayload {
+  persona: PersonaId;
+  section_order: string[];
+  hero_title: string;
+  hero_subtitle: string;
+  metric_priority: string[];
+  cards: PersonaCard[];
+  agromet?: AgrometAdvisoryStatus | null;
+  quick_actions: string[];
+}
+
 export interface HomeBundle {
   weather: WeatherResponse;
   forecast: ForecastResponse | null;
@@ -205,6 +277,7 @@ export interface HomeBundle {
   insights: InsightsResponse;
   astronomy: AstronomyResponse | null;
   marine: MarineResponse | null;
+  persona?: PersonaHomePayload | null;
 }
 
 export interface ChatMessage {
@@ -220,6 +293,7 @@ export interface ChatRequest {
   interests: string[];
   units?: string;
   history: ChatMessage[];
+  locale?: string;
 }
 
 export type ChatSource = "deepseek" | "gemini" | "openrouter" | "fallback";
@@ -244,4 +318,5 @@ export interface UserPreferences {
     daily_summary: boolean;
   };
   units: "metric" | "imperial";
+  persona_profile?: PersonaProfile | null;
 }

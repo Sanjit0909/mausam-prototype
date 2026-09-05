@@ -5,14 +5,16 @@ import { MapPin } from "lucide-react";
 import { SourceBadge } from "@/components/common/SourceBadge";
 import { WeatherIcon } from "@/components/weather/WeatherIcon";
 import { useLanguage } from "@/context/LanguageContext";
-import { formatTemp, locationLabel, providerDisplayName } from "@/lib/utils/format";
+import { formatTemp, localizeProviderLabel, locationLabel, providerDisplayName } from "@/lib/utils/format";
 import type { WeatherResponse } from "@/lib/types";
 
 interface WeatherHeroProps {
   weather: WeatherResponse;
+  title?: string;
+  subtitle?: string;
 }
 
-export function WeatherHero({ weather }: WeatherHeroProps) {
+export function WeatherHero({ weather, title, subtitle }: WeatherHeroProps) {
   const { current, location } = weather;
   const { locale, t } = useLanguage();
   const [now, setNow] = useState<Date | null>(null);
@@ -51,6 +53,13 @@ export function WeatherHero({ weather }: WeatherHeroProps) {
             <span>{locationLabel(location)}</span>
           </div>
 
+          {(title || subtitle) && (
+            <div className="mt-2">
+              {title && <p className="text-xs font-semibold uppercase tracking-wide text-sky-400/90">{title}</p>}
+              {subtitle && <p className="text-sm text-mist-400">{subtitle}</p>}
+            </div>
+          )}
+
           <div className="mt-3 flex items-end gap-3">
             <span className="text-7xl font-semibold tracking-tight text-mist-100 md:text-8xl">
               {formatTemp(current.temperature)}
@@ -63,12 +72,26 @@ export function WeatherHero({ weather }: WeatherHeroProps) {
           </p>
 
           <SourceBadge
-            provider={providerDisplayName(weather.source)}
+            provider={
+              weather.provider_label
+                ? localizeProviderLabel(weather.provider_label, t)
+                : providerDisplayName(weather.source)
+            }
             kind={t("home.currentConditions")}
             updatedAt={current.observed_at}
             official={weather.source === "imd"}
             className="mt-3"
           />
+          {weather.observation_station && (
+            <p className="mt-2 text-xs text-mist-500">
+              {weather.station_distance_km != null
+                ? t("home.observedAtKm", {
+                    station: weather.observation_station,
+                    km: weather.station_distance_km.toFixed(0),
+                  })
+                : t("home.observedAt", { station: weather.observation_station })}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col items-center gap-2 animate-float">

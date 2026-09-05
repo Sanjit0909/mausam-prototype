@@ -1,14 +1,17 @@
 import asyncio
+import json
 
 from fastapi import APIRouter, Query
 
 from ..models.alerts import AlertsResponse, has_severe_alert
+from ..models.persona import FarmerProfile, PersonaProfile
 from ..models.personalization import HomeResponse
 from ..services.air_quality import get_air_quality
 from ..services.alerts_engine import generate_derived_alerts
 from ..services.alerts_provider import get_official_alerts_bundle
 from ..services.astronomy import get_astronomy
 from ..services.marine_provider import get_marine
+from ..services.persona_engine import build_persona_home
 from ..services.recommendation_engine import build_insights_response
 from ..services.weather_provider import get_current_weather, get_forecast
 
@@ -28,6 +31,32 @@ def _parse_interaction_weights(raw: str) -> dict[str, float]:
     return weights
 
 
+def _parse_persona_profile(
+    persona_profile: str,
+    crop: str | None,
+    crop_stage: str | None,
+    primary_persona: str | None,
+) -> PersonaProfile | None:
+    profile: PersonaProfile | None = None
+    if persona_profile.strip():
+        try:
+            profile = PersonaProfile.model_validate(json.loads(persona_profile))
+        except (json.JSONDecodeError, ValueError):
+            profile = None
+    if crop or crop_stage or primary_persona:
+        base = profile or PersonaProfile()
+        farmer = base.farmer or FarmerProfile()
+        if crop:
+            farmer = farmer.model_copy(update={"crop": crop.strip().lower()})
+        if crop_stage:
+            farmer = farmer.model_copy(update={"crop_stage": crop_stage.strip().lower()})
+        updates: dict = {"farmer": farmer}
+        if primary_persona:
+            updates["primary_persona"] = primary_persona.strip().lower()
+        profile = base.model_copy(update=updates)
+    return profile
+
+
 @router.get("", response_model=HomeResponse)
 async def get_home(
     lat: float = Query(..., ge=-90, le=90),
@@ -35,9 +64,14 @@ async def get_home(
     name: str | None = Query(None),
     interests: str = Query(""),
     interaction: str = Query(""),
+    persona_profile: str = Query("", description="JSON PersonaProfile"),
+    crop: str | None = Query(None),
+    crop_stage: str | None = Query(None),
+    primary_persona: str | None = Query(None),
 ) -> HomeResponse:
     interest_list = [i.strip() for i in interests.split(",") if i.strip()]
     interaction_weights = _parse_interaction_weights(interaction)
+    profile = _parse_persona_profile(persona_profile, crop, crop_stage, primary_persona)
 
     weather_result, forecast_result, air_quality_result, official_result, marine_result, astronomy_result = await asyncio.gather(
         get_current_weather(lat, lon, name),
@@ -76,6 +110,18 @@ async def get_home(
         marine_available=marine_available,
         interaction_weights=interaction_weights,
     )
+    persona = await build_persona_home(
+        weather_result,
+        forecast,
+        air_quality,
+        interest_list,
+        profile=profile,
+    )
+    # Prefer persona metric order when interests map to a specialized homepage.
+    if persona.metric_priority:
+        insights.card_order = list(
+            dict.fromkeys([*persona.metric_priority, *insights.card_order])
+        )
     alerts = AlertsResponse(
         location_name=weather_result.location.name,
         alerts=all_alerts,
@@ -94,4 +140,5 @@ async def get_home(
         insights=insights,
         astronomy=astronomy,
         marine=marine,
+        persona=persona,
     )

@@ -9,6 +9,7 @@ create table if not exists public.preferences (
   preferred_location jsonb,
   notification_prefs jsonb default '{"alerts": true, "daily_summary": false}'::jsonb,
   units text default 'metric',
+  persona_profile jsonb default null,
   updated_at timestamptz default now()
 );
 
@@ -54,3 +55,6 @@ drop policy if exists "Users can delete own saved locations" on public.saved_loc
 create policy "Users can delete own saved locations"
   on public.saved_locations for delete
   using (auth.uid() = user_id);
+
+-- Optional migration for existing projects (safe to re-run):
+alter table public.preferences add column if not exists persona_profile jsonb default null;

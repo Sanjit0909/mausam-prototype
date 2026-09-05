@@ -14,6 +14,7 @@ class ChatRequest(BaseModel):
     interests: list[str] = []
     units: str = "metric"
     history: list[ChatMessage] = []
+    locale: str = "en"  # "en" | "hi"
 
 
 class ChatResponse(BaseModel):
