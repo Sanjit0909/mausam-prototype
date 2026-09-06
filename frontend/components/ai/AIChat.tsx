@@ -7,6 +7,7 @@ import { useLocation } from "@/context/LocationContext";
 import { usePreferences } from "@/context/PreferencesContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { locationLabel } from "@/lib/utils/format";
+import { cleanAiReply } from "@/lib/utils/cleanAiReply";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import type { ChatMessage } from "@/lib/types";
 
@@ -66,7 +67,7 @@ export function AIChat() {
         history,
         locale
       );
-      setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: cleanAiReply(res.reply) }]);
     } catch {
       setError(t("assistant.error"));
     } finally {
