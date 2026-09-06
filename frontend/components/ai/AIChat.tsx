@@ -7,15 +7,9 @@ import { useLocation } from "@/context/LocationContext";
 import { usePreferences } from "@/context/PreferencesContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { locationLabel } from "@/lib/utils/format";
+import { cleanAiReply } from "@/lib/utils/cleanAiReply";
 import type { TranslationKey } from "@/lib/i18n/translations";
-import type { ChatMessage, ChatSource } from "@/lib/types";
-
-/** Provider product names stay untranslated; only the offline UI label is localized. */
-const SOURCE_LABELS: Record<Exclude<ChatSource, "fallback">, string> = {
-  deepseek: "DeepSeek V4 Flash",
-  gemini: "Gemini",
-  openrouter: "OpenRouter",
-};
+import type { ChatMessage } from "@/lib/types";
 
 const SUGGESTION_KEYS: TranslationKey[] = [
   "assistant.suggest.run",
@@ -24,16 +18,12 @@ const SUGGESTION_KEYS: TranslationKey[] = [
   "assistant.suggest.event",
 ];
 
-interface DisplayMessage extends ChatMessage {
-  source?: ChatSource;
-}
-
 export function AIChat() {
   const { location } = useLocation();
   const { preferences } = usePreferences();
   const { t, locale } = useLanguage();
   const welcome = t("assistant.welcome", { name: location.name });
-  const [messages, setMessages] = useState<DisplayMessage[]>([
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
       content: welcome,
@@ -50,7 +40,7 @@ export function AIChat() {
 
   useEffect(() => {
     setMessages((prev) => {
-      if (prev.length === 1 && prev[0].role === "assistant" && !prev[0].source) {
+      if (prev.length === 1 && prev[0].role === "assistant") {
         return [{ ...prev[0], content: welcome }];
       }
       return prev;
@@ -77,7 +67,7 @@ export function AIChat() {
         history,
         locale
       );
-      setMessages((prev) => [...prev, { role: "assistant", content: res.reply, source: res.source }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: cleanAiReply(res.reply) }]);
     } catch {
       setError(t("assistant.error"));
     } finally {
@@ -86,7 +76,7 @@ export function AIChat() {
   };
 
   return (
-    <div className="glass flex h-[70vh] min-h-[480px] flex-col rounded-3xl overflow-hidden">
+    <div className="glass flex h-[70vh] min-h-[480px] flex-col overflow-hidden rounded-3xl">
       <div className="flex items-center gap-3 border-b border-white/5 px-6 py-4">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-sky-600">
           <Sparkles className="h-4 w-4 text-navy-950" />
@@ -107,18 +97,12 @@ export function AIChat() {
             >
               {msg.role === "user" ? <User className="h-4 w-4 text-sky-300" /> : <Bot className="h-4 w-4 text-mist-200" />}
             </div>
-            <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${
-              msg.role === "user" ? "bg-sky-500/15 text-mist-100" : "bg-white/[0.06] text-mist-200"
-            }`}
+            <div
+              className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${
+                msg.role === "user" ? "bg-sky-500/15 text-mist-100" : "bg-white/[0.06] text-mist-200"
+              }`}
             >
               <p className="whitespace-pre-wrap">{msg.content}</p>
-              {msg.source && (
-                <p className="mt-1.5 text-[10px] uppercase tracking-wide text-mist-400">
-                  {msg.source === "fallback"
-                    ? t("assistant.source.fallback")
-                    : (SOURCE_LABELS[msg.source] ?? msg.source)}
-                </p>
-              )}
             </div>
           </div>
         ))}
@@ -154,7 +138,7 @@ export function AIChat() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          handleSend(input);
+          void handleSend(input);
         }}
         className="flex items-center gap-2 border-t border-white/5 p-4"
       >
@@ -162,12 +146,13 @@ export function AIChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={t("assistant.placeholder")}
-          className="min-h-11 flex-1 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-mist-100 placeholder:text-mist-400 outline-none focus:border-sky-400/50"
+          className="min-h-11 flex-1 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-mist-100 outline-none placeholder:text-mist-400 focus:border-sky-400/50"
         />
         <button
           type="submit"
           disabled={loading || !input.trim()}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sky-500 text-navy-950 transition-colors hover:bg-sky-400 disabled:opacity-40"
+          aria-label={t("home.ai.send")}
         >
           <Send className="h-4 w-4" />
         </button>
