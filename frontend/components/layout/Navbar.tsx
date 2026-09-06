@@ -13,6 +13,7 @@ import type { TranslationKey } from "@/lib/i18n/translations";
 
 const NAV_LINKS: { href: string; labelKey: TranslationKey }[] = [
   { href: "/home", labelKey: "nav.home" },
+  { href: "/weather", labelKey: "nav.weather" },
   { href: "/explore", labelKey: "nav.explore" },
   { href: "/alerts", labelKey: "nav.alerts" },
   { href: "/assistant", labelKey: "nav.assistant" },
