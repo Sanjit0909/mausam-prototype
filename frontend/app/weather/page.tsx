@@ -10,6 +10,7 @@ import { AQICard } from "@/components/weather/AQICard";
 import { UVCard } from "@/components/weather/UVCard";
 import { SunMoonCard } from "@/components/weather/SunMoonCard";
 import { MarineCard } from "@/components/weather/MarineCard";
+import { WeatherMapCard, MarineMapCard } from "@/components/weather/WeatherMapCard";
 import { HeroSkeleton, GridSkeleton, Skeleton } from "@/components/common/LoadingSkeleton";
 import { ErrorState } from "@/components/common/ErrorState";
 import { useLocation } from "@/context/LocationContext";
@@ -91,6 +92,12 @@ export default function WeatherDetailsPage() {
               </div>
               <HourlyForecast hourly={forecast.hourly} limit={48} />
               <DailyForecast daily={forecast.daily} />
+
+              <WeatherMapCard
+                lat={location.lat}
+                lon={location.lon}
+                locationName={location.name}
+              />
             </>
           )}
 
@@ -98,6 +105,10 @@ export default function WeatherDetailsPage() {
             {astronomy && <SunMoonCard data={astronomy} />}
             {marine && marine.available && <MarineCard data={marine} />}
           </div>
+
+          {marine && marine.available && (
+            <MarineMapCard locationName={location.name} />
+          )}
         </>
       )}
     </div>
