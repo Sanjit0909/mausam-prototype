@@ -2,11 +2,13 @@
 
 import { Moon, Sunrise, Sunset } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { localizeMoonPhase } from "@/lib/i18n/localizeWeather";
 import { formatTime } from "@/lib/utils/format";
 import type { AstronomyResponse } from "@/lib/types";
 
 export function SunMoonCard({ data }: { data: AstronomyResponse }) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const moonPhase = localizeMoonPhase(data.moon_phase, locale);
   return (
     <div className="glass glass-hover flex flex-col gap-4 rounded-3xl p-5">
       <span className="text-xs font-medium uppercase tracking-wide text-mist-400">{t("home.sunMoon")}</span>
@@ -15,14 +17,18 @@ export function SunMoonCard({ data }: { data: AstronomyResponse }) {
         <div className="flex items-center gap-2">
           <Sunrise className="h-5 w-5 text-amber-400" />
           <div>
-            <p className="text-sm font-medium text-mist-100">{formatTime(data.sunrise, data.location.timezone)}</p>
+            <p className="text-sm font-medium text-mist-100">
+              {formatTime(data.sunrise, data.location.timezone, locale)}
+            </p>
             <p className="text-[11px] text-mist-400">{t("home.sunrise")}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Sunset className="h-5 w-5 text-rose-400" />
           <div>
-            <p className="text-sm font-medium text-mist-100">{formatTime(data.sunset, data.location.timezone)}</p>
+            <p className="text-sm font-medium text-mist-100">
+              {formatTime(data.sunset, data.location.timezone, locale)}
+            </p>
             <p className="text-[11px] text-mist-400">{t("home.sunset")}</p>
           </div>
         </div>
@@ -32,7 +38,7 @@ export function SunMoonCard({ data }: { data: AstronomyResponse }) {
         <Moon className="h-5 w-5 text-mist-300" />
         <div>
           <p className="text-sm font-medium text-mist-100">
-            {t("home.moonLit", { phase: data.moon_phase, pct: data.moon_illumination.toFixed(0) })}
+            {t("home.moonLit", { phase: moonPhase, pct: data.moon_illumination.toFixed(0) })}
           </p>
           <p className="text-[11px] text-mist-400">{t("home.moonUnavailable")}</p>
         </div>

@@ -167,6 +167,32 @@ async def test_runner_traveller_farmer_payloads_differ():
 
 
 @pytest.mark.asyncio
+async def test_farmer_hindi_locale_natural_copy():
+    weather = make_weather()
+    forecast = make_forecast()
+    hi = await persona_engine.build_farmer_payload(
+        weather,
+        forecast,
+        FarmerProfile(crop="wheat", crop_stage="flowering"),
+        locale="hi",
+    )
+    blob = " ".join(
+        f"{c.title} {c.summary} {c.detail} {c.recommendation} {c.reason} {c.label} {c.source_label}"
+        for c in hi.cards
+    )
+    assert "गेहूँ" in blob
+    assert "फूल आने की अवस्था" in blob
+    assert "Official IMD Meghdoot" not in blob
+    assert "1 of next" not in blob
+    assert "High rain chance" not in blob
+    assert "For Wheat at" not in blob
+    assert "may stress" not in blob
+    agro = next(c for c in hi.cards if c.id == "agromet_advisory")
+    assert "Meghdoot/KALP" in agro.detail or "KALP" in agro.detail
+    assert "जुड़ा नहीं" in agro.detail or "उपलब्ध" in agro.summary
+
+
+@pytest.mark.asyncio
 async def test_agromet_never_fakes_official_advisory():
     status = await fetch_official_agromet_advisory(18.5, 73.8, FarmerProfile(crop="rice", crop_stage="vegetative"))
     assert status.available is False

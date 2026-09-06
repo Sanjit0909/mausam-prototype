@@ -19,7 +19,7 @@ import { trackCardInteraction } from "@/hooks/useInteractionTracking";
 import { useLanguage } from "@/context/LanguageContext";
 import { getPersonaConfig, type HomeSectionId, type PersonaId } from "@/lib/personalization/personaConfig";
 import { localizePersonaCardText } from "@/lib/i18n/localizePersona";
-import { formatPercent, windDirectionLabel } from "@/lib/utils/format";
+import { formatPercent, formatPressure, formatVisibility, formatWind, windDirectionLabel } from "@/lib/utils/format";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import type {
   AirQualityResponse,
@@ -137,8 +137,8 @@ export function PersonaHomeDashboard({
       <WeatherMetricCard
         icon={Wind}
         label={t("home.wind")}
-        value={`${current.wind_speed.toFixed(0)} km/h`}
-        sublabel={windDirectionLabel(current.wind_direction)}
+        value={formatWind(current.wind_speed)}
+        sublabel={windDirectionLabel(current.wind_direction, locale)}
         accentClassName="text-sky-400"
         reason={reasons.wind}
         onActivate={() => trackCardInteraction("wind")}
@@ -148,7 +148,7 @@ export function PersonaHomeDashboard({
       <WeatherMetricCard
         icon={Gauge}
         label={t("home.pressure")}
-        value={`${current.pressure.toFixed(0)} hPa`}
+        value={formatPressure(current.pressure)}
         accentClassName="text-mist-300"
         reason={reasons.pressure}
         onActivate={() => trackCardInteraction("pressure")}
@@ -158,7 +158,7 @@ export function PersonaHomeDashboard({
       <WeatherMetricCard
         icon={Eye}
         label={t("home.visibility")}
-        value={current.visibility ? `${current.visibility.toFixed(1)} km` : "--"}
+        value={formatVisibility(current.visibility)}
         accentClassName="text-mist-300"
         reason={reasons.visibility}
         onActivate={() => trackCardInteraction("visibility")}

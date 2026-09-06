@@ -69,7 +69,7 @@ def generate_derived_alerts(
             )
         )
 
-    if current.wind_speed >= 50:
+    if current.wind_speed is not None and current.wind_speed >= 50:
         alerts.append(
             WeatherAlert(
                 id="wind-high",

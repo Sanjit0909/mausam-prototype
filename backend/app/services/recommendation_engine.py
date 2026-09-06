@@ -200,7 +200,7 @@ def compute_card_order(
         interests=interests,
         current_temp=weather.current.temperature if weather else 25.0,
         current_uv=weather.current.uv_index if weather else None,
-        current_wind=weather.current.wind_speed if weather else 0.0,
+        current_wind=weather.current.wind_speed if weather and weather.current.wind_speed is not None else 0.0,
         aqi=air_quality.us_aqi if air_quality else None,
         aqi_category=air_quality.category if air_quality else "Unknown",
         rain_likely_evening=rain_likely_evening,
@@ -294,7 +294,7 @@ def generate_insights(
             )
         )
 
-    if "marine_beach" in interest_set and current.wind_speed >= 30:
+    if "marine_beach" in interest_set and current.wind_speed is not None and current.wind_speed >= 30:
         insights.append(
             PersonalizedInsight(
                 message=f"Winds at {current.wind_speed:.0f} km/h — check local advisories before heading out on the water.",
@@ -358,13 +358,15 @@ def generate_recommendations(
 
     if "agriculture" in interests:
         rain_next_24h = bool(forecast and forecast.daily and (forecast.daily[0].precipitation_probability_max or 0) >= 50)
-        disease_risk = current.humidity >= 80 and rain_next_24h
+        disease_risk = current.humidity is not None and current.humidity >= 80 and rain_next_24h
         if disease_risk:
             desc = f"High humidity ({current.humidity:.0f}%) with rain expected — monitor crops for fungal disease risk."
         elif rain_next_24h:
             desc = "Rain expected soon — consider postponing irrigation."
-        else:
+        elif current.humidity is not None:
             desc = f"Humidity at {current.humidity:.0f}%, {current.condition.lower()} — monitor soil moisture before irrigating."
+        else:
+            desc = f"{current.condition} — humidity unavailable; monitor soil moisture before irrigating."
         cards.append(
             RecommendationCard(
                 interest="agriculture",
@@ -381,7 +383,11 @@ def generate_recommendations(
             RecommendationCard(
                 interest="marine_beach",
                 title="Beach & Marine Outlook",
-                description=f"Wind at {current.wind_speed:.0f} km/h. Check the Marine card for wave and tide conditions.",
+                description=(
+                    f"Wind at {current.wind_speed:.0f} km/h. Check the Marine card for wave and tide conditions."
+                    if current.wind_speed is not None
+                    else "Wind unavailable. Check the Marine card for wave and tide conditions."
+                ),
                 icon="waves",
                 reason="Based on current wind conditions",
             )
@@ -421,7 +427,11 @@ def generate_recommendations(
             RecommendationCard(
                 interest="health",
                 title="Health Advisory",
-                description=f"UV index {uv:.0f}, humidity {current.humidity:.0f}%. {'Stay hydrated.' if current.temperature > 30 else 'Conditions are comfortable.'}",
+                description=(
+                    f"UV index {uv:.0f}, humidity "
+                    f"{f'{current.humidity:.0f}%' if current.humidity is not None else 'unavailable'}. "
+                    f"{'Stay hydrated.' if current.temperature > 30 else 'Conditions are comfortable.'}"
+                ),
                 icon="heart",
                 reason="Based on current UV and temperature",
             )

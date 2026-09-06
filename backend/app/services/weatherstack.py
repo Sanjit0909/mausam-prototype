@@ -69,20 +69,29 @@ async def get_current_weather(lat: float, lon: float, name: str | None = None) -
     description = (current.get("weather_descriptions") or ["Unknown"])[0]
     group = _condition_group(description)
 
+    def _num(key: str):
+        if key not in current or current[key] is None or current[key] == "":
+            return None
+        try:
+            return float(current[key])
+        except (TypeError, ValueError):
+            return None
+
     weather = CurrentWeather(
-        temperature=current["temperature"],
-        feels_like=current.get("feelslike", current["temperature"]),
+        temperature=float(current["temperature"]),
+        feels_like=float(current["feelslike"]) if current.get("feelslike") is not None else float(current["temperature"]),
         condition=description,
         condition_code=current.get("weather_code", 0),
         condition_group=group,
         is_day=(current.get("is_day", "yes") == "yes"),
-        humidity=current.get("humidity", 0),
-        wind_speed=current.get("wind_speed", 0),
-        wind_direction=current.get("wind_degree", 0),
-        pressure=current.get("pressure", 0),
-        precipitation=current.get("precip", 0),
-        uv_index=current.get("uv_index"),
-        visibility=current.get("visibility"),
+        # Missing keys stay None so field-merge can skip invalid Weatherstack gaps.
+        humidity=_num("humidity"),
+        wind_speed=_num("wind_speed"),
+        wind_direction=_num("wind_degree"),
+        pressure=_num("pressure"),
+        precipitation=_num("precip"),
+        uv_index=_num("uv_index"),
+        visibility=_num("visibility"),
         observed_at=datetime.now(timezone.utc).isoformat(),
     )
 

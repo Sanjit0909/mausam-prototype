@@ -68,10 +68,12 @@ async def get_home(
     crop: str | None = Query(None),
     crop_stage: str | None = Query(None),
     primary_persona: str | None = Query(None),
+    locale: str = Query("en", description="UI locale: en | hi"),
 ) -> HomeResponse:
     interest_list = [i.strip() for i in interests.split(",") if i.strip()]
     interaction_weights = _parse_interaction_weights(interaction)
     profile = _parse_persona_profile(persona_profile, crop, crop_stage, primary_persona)
+    locale_norm = "hi" if locale.strip().lower().startswith("hi") else "en"
 
     weather_result, forecast_result, air_quality_result, official_result, marine_result, astronomy_result = await asyncio.gather(
         get_current_weather(lat, lon, name),
@@ -116,6 +118,7 @@ async def get_home(
         air_quality,
         interest_list,
         profile=profile,
+        locale=locale_norm,
     )
     # Prefer persona metric order when interests map to a specialized homepage.
     if persona.metric_priority:

@@ -63,6 +63,21 @@ const CARD_ICONS: Record<string, typeof Sprout> = {
   packing: Package,
 };
 
+function formatSupportValue(key: string, value: unknown, locale: string): string {
+  const raw = String(value);
+  if (locale !== "hi") return raw;
+  if (
+    key === "crop" ||
+    key === "crop_stage" ||
+    key === "crop_relevance" ||
+    key === "crop_stage_relevance" ||
+    key === "status"
+  ) {
+    return localizePersonaCardText(raw, locale);
+  }
+  return raw;
+}
+
 function formatSupportRows(
   data: Record<string, unknown>,
   locale: string
@@ -74,7 +89,7 @@ function formatSupportRows(
     }
     if (typeof value === "object") continue;
     const label = localizePersonaCardText(key.replace(/_/g, " "), locale);
-    rows.push({ label, value: String(value) });
+    rows.push({ label, value: formatSupportValue(key, value, locale) });
   }
   if (Array.isArray(data.days)) {
     rows.push({
@@ -182,7 +197,12 @@ export function ExpandablePersonaCard({ card }: { card: PersonaCard }) {
               </a>
             )}
           </div>
-          {card.reason && <WhyThis reason={card.reason} label={card.label} />}
+          {card.reason && (
+            <WhyThis
+              reason={localizePersonaCardText(card.reason, locale)}
+              label={localizePersonaCardText(card.label, locale)}
+            />
+          )}
         </div>
       )}
     </div>
