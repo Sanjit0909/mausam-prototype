@@ -1,16 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, Check, LogOut, MapPin, Save, User } from "lucide-react";
+import { Bell, Check, LogOut, MapPin, Save, Sprout, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { InterestSelector } from "@/components/personalization/InterestSelector";
+import { FarmerProfileFields } from "@/components/personalization/FarmerProfileFields";
 import { LocationSearch } from "@/components/location/LocationSearch";
 import { useAuth } from "@/context/AuthContext";
 import { usePreferences } from "@/context/PreferencesContext";
 import { useLocation } from "@/context/LocationContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { locationLabel } from "@/lib/utils/format";
-import type { InterestKey } from "@/lib/types";
+import type { FarmerProfile, InterestKey, PersonaProfile } from "@/lib/types";
+
+const DEFAULT_FARMER: FarmerProfile = {
+  crop: "wheat",
+  crop_stage: "vegetative",
+  irrigation_type: null,
+  sowing_date: null,
+  field_size_ha: null,
+};
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -20,6 +29,9 @@ export default function ProfilePage() {
   const { t } = useLanguage();
   const [name, setName] = useState(preferences.name);
   const [interests, setInterests] = useState<InterestKey[]>(preferences.interests);
+  const [farmer, setFarmer] = useState<FarmerProfile>(
+    preferences.persona_profile?.farmer ?? DEFAULT_FARMER
+  );
   const [alertsOn, setAlertsOn] = useState(preferences.notification_prefs.alerts);
   const [dailySummary, setDailySummary] = useState(preferences.notification_prefs.daily_summary);
   const [saved, setSaved] = useState(false);
@@ -29,6 +41,7 @@ export default function ProfilePage() {
     setInterests(preferences.interests);
     setAlertsOn(preferences.notification_prefs.alerts);
     setDailySummary(preferences.notification_prefs.daily_summary);
+    setFarmer(preferences.persona_profile?.farmer ?? DEFAULT_FARMER);
   }, [preferences]);
 
   const toggleInterest = (key: InterestKey) => {
@@ -36,11 +49,23 @@ export default function ProfilePage() {
   };
 
   const handleSave = async () => {
+    const persona_profile: PersonaProfile = {
+      ...(preferences.persona_profile ?? {}),
+      farmer: interests.includes("agriculture") ? farmer : preferences.persona_profile?.farmer ?? null,
+      primary_persona: interests.includes("agriculture")
+        ? "farmer"
+        : interests.includes("outdoor_fitness")
+          ? "runner"
+          : interests.includes("travel")
+            ? "traveller"
+            : preferences.persona_profile?.primary_persona ?? null,
+    };
     await updatePreferences({
       name,
       interests,
       preferred_location: location,
       notification_prefs: { alerts: alertsOn, daily_summary: dailySummary },
+      persona_profile,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -82,6 +107,16 @@ export default function ProfilePage() {
         <h2 className="text-sm font-semibold text-mist-200">{t("profile.interests")}</h2>
         <InterestSelector selected={interests} onToggle={toggleInterest} />
       </div>
+
+      {interests.includes("agriculture") && (
+        <div className="glass space-y-4 rounded-3xl p-6">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-mist-200">
+            <Sprout className="h-4 w-4 text-emerald-400" /> {t("crop.profileTitle")}
+          </h2>
+          <p className="text-xs text-mist-500">{t("crop.profileHint")}</p>
+          <FarmerProfileFields value={farmer} onChange={setFarmer} />
+        </div>
+      )}
 
       <div className="glass space-y-4 rounded-3xl p-6">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-mist-200">

@@ -1,61 +1,76 @@
 "use client";
 
 import { useState } from "react";
-import { Bike, Briefcase, Sparkles, Sprout, Waves } from "lucide-react";
-import { useLocation } from "@/context/LocationContext";
+import { Bike, Briefcase, Sparkles, Sprout } from "lucide-react";
 import { usePreferences } from "@/context/PreferencesContext";
 import { useLanguage } from "@/context/LanguageContext";
 import type { TranslationKey } from "@/lib/i18n/translations";
-import type { InterestKey, LocationInfo } from "@/lib/types";
+import type { InterestKey, PersonaId, PersonaProfile } from "@/lib/types";
 
 interface DemoPersona {
+  id: string;
   key: InterestKey;
+  persona: PersonaId;
   labelKey: TranslationKey;
   icon: typeof Bike;
-  location: LocationInfo;
+  persona_profile: PersonaProfile;
 }
 
+/** Same-location demo personas — location stays put so SIH can prove UI differences from profile alone. */
 const DEMO_PERSONAS: DemoPersona[] = [
   {
+    id: "runner",
     key: "outdoor_fitness",
-    labelKey: "persona.runner",
+    persona: "runner",
+    labelKey: "persona.runnerSame",
     icon: Bike,
-    location: { name: "Mumbai", country: "India", admin1: "Maharashtra", lat: 19.076, lon: 72.8777 },
+    persona_profile: { primary_persona: "runner" },
   },
   {
+    id: "farmer-wheat",
     key: "agriculture",
-    labelKey: "persona.farmer",
+    persona: "farmer",
+    labelKey: "persona.farmerWheat",
     icon: Sprout,
-    location: { name: "Solapur", country: "India", admin1: "Maharashtra", lat: 17.6599, lon: 75.9064 },
+    persona_profile: {
+      primary_persona: "farmer",
+      farmer: { crop: "wheat", crop_stage: "flowering", irrigation_type: "canal", field_size_ha: 2 },
+    },
   },
   {
+    id: "farmer-rice",
+    key: "agriculture",
+    persona: "farmer",
+    labelKey: "persona.farmerRice",
+    icon: Sprout,
+    persona_profile: {
+      primary_persona: "farmer",
+      farmer: { crop: "rice", crop_stage: "vegetative", irrigation_type: "canal", field_size_ha: 1.5 },
+    },
+  },
+  {
+    id: "traveller",
     key: "travel",
-    labelKey: "persona.traveler",
+    persona: "traveller",
+    labelKey: "persona.travelerSame",
     icon: Briefcase,
-    location: { name: "New Delhi", country: "India", admin1: "Delhi", lat: 28.6139, lon: 77.209 },
-  },
-  {
-    key: "marine_beach",
-    labelKey: "persona.fisherman",
-    icon: Waves,
-    location: { name: "Kochi", country: "India", admin1: "Kerala", lat: 9.9312, lon: 76.2673 },
+    persona_profile: { primary_persona: "traveller" },
   },
 ];
 
-/** One-click demo profile switcher (spec section 19). Instantly re-personalizes the whole
- * homepage - both interests AND location change together - to visibly demonstrate that the
- * same product adapts to who's using it, without needing to click through the full profile
- * editor. Styled as a first-class feature, not a debug tool. */
+/** Switches interests + farm profile only — keeps the current map location for fair comparison. */
 export function PersonaSwitcher() {
-  const { setLocation } = useLocation();
-  const { updatePreferences } = usePreferences();
+  const { updatePreferences, preferences } = usePreferences();
   const { t } = useLanguage();
   const [active, setActive] = useState<string | null>(null);
 
   const handleSwitch = async (persona: DemoPersona) => {
-    setActive(persona.key);
-    setLocation(persona.location);
-    void updatePreferences({ interests: [persona.key], preferred_location: persona.location });
+    setActive(persona.id);
+    void updatePreferences({
+      interests: [persona.key],
+      preferred_location: preferences.preferred_location,
+      persona_profile: persona.persona_profile,
+    });
   };
 
   return (
@@ -64,13 +79,15 @@ export function PersonaSwitcher() {
         <Sparkles className="h-3.5 w-3.5 text-sky-400" />
         {t("persona.switch")}
       </div>
+      <p className="mb-2 px-1 text-[11px] text-mist-500">{t("persona.switchHint")}</p>
       <div className="flex flex-wrap gap-2">
         {DEMO_PERSONAS.map((persona) => {
           const Icon = persona.icon;
-          const isActive = active === persona.key;
+          const isActive = active === persona.id;
           return (
             <button
-              key={persona.key}
+              key={persona.id}
+              type="button"
               onClick={() => handleSwitch(persona)}
               className={`flex min-h-11 items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium transition-colors ${
                 isActive

@@ -7,7 +7,8 @@ export function sendChatMessage(
   lon: number,
   locationName: string | undefined,
   interests: string[],
-  history: ChatMessage[]
+  history: ChatMessage[],
+  locale: string = "en"
 ) {
   const payload: ChatRequest = {
     message,
@@ -17,6 +18,7 @@ export function sendChatMessage(
     interests,
     units: "metric",
     history,
+    locale,
   };
-  return apiFetch<ChatResponse>("/api/ai/chat", { method: "POST", body: payload, timeoutMs: 22000 });
+  return apiFetch<ChatResponse>("/api/ai/chat", { method: "POST", body: payload, timeoutMs: 18000 });
 }

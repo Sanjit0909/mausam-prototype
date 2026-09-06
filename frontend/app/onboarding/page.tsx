@@ -4,15 +4,27 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CloudSun, Loader2 } from "lucide-react";
 import { InterestSelector } from "@/components/personalization/InterestSelector";
+import { FarmerProfileFields } from "@/components/personalization/FarmerProfileFields";
 import { usePreferences } from "@/context/PreferencesContext";
 import { useLanguage } from "@/context/LanguageContext";
-import type { InterestKey } from "@/lib/types";
+import type { FarmerProfile, InterestKey, PersonaProfile } from "@/lib/types";
+
+const DEFAULT_FARMER: FarmerProfile = {
+  crop: "wheat",
+  crop_stage: "vegetative",
+  irrigation_type: null,
+  sowing_date: null,
+  field_size_ha: null,
+};
 
 export default function OnboardingPage() {
   const router = useRouter();
   const { preferences, updatePreferences } = usePreferences();
   const { t } = useLanguage();
   const [selected, setSelected] = useState<InterestKey[]>(preferences.interests);
+  const [farmer, setFarmer] = useState<FarmerProfile>(
+    preferences.persona_profile?.farmer ?? DEFAULT_FARMER
+  );
   const [saving, setSaving] = useState(false);
 
   const toggle = (key: InterestKey) => {
@@ -21,7 +33,18 @@ export default function OnboardingPage() {
 
   const handleContinue = async () => {
     setSaving(true);
-    await updatePreferences({ interests: selected });
+    const persona_profile: PersonaProfile = {
+      ...(preferences.persona_profile ?? {}),
+      farmer: selected.includes("agriculture") ? farmer : preferences.persona_profile?.farmer ?? null,
+      primary_persona: selected.includes("agriculture")
+        ? "farmer"
+        : selected.includes("outdoor_fitness")
+          ? "runner"
+          : selected.includes("travel")
+            ? "traveller"
+            : null,
+    };
+    await updatePreferences({ interests: selected, persona_profile });
     router.push("/home");
   };
 
@@ -36,6 +59,14 @@ export default function OnboardingPage() {
       <div className="mt-8 w-full">
         <InterestSelector selected={selected} onToggle={toggle} />
       </div>
+
+      {selected.includes("agriculture") && (
+        <div className="mt-6 w-full glass rounded-3xl p-5 space-y-3">
+          <h2 className="text-sm font-semibold text-mist-200">{t("crop.profileTitle")}</h2>
+          <p className="text-xs text-mist-500">{t("crop.profileHint")}</p>
+          <FarmerProfileFields value={farmer} onChange={setFarmer} />
+        </div>
+      )}
 
       <button
         onClick={handleContinue}

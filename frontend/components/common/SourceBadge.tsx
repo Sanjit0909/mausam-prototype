@@ -20,10 +20,10 @@ interface SourceBadgeProps {
 
 function sourceLabel(provider: string, imdLabel: string, nwsLabel: string): string {
   const key = provider.trim().toLowerCase();
-  if (key === "imd" || key.includes("imd")) return imdLabel;
-  if (key === "nws" || key.includes("nws") || key.includes("national weather service")) {
-    return nwsLabel;
-  }
+  // Only remap bare provider codes — never rewrite longer provenance phrases
+  // (e.g. "MAUSAM derived (not IMD advisory)", "IMD Agromet (not connected)").
+  if (key === "imd") return imdLabel;
+  if (key === "nws") return nwsLabel;
   return provider;
 }
 
@@ -63,9 +63,9 @@ export function SourceBadge({ provider, kind, updatedAt, official = false, class
       {isImdOfficial && <ShieldCheck className="h-3 w-3" />}
       <span>
         {label}
-        {kind ? ` \u2022 ${kind}` : ""}
+        {kind ? ` • ${kind}` : ""}
       </span>
-      {ago && <span className="opacity-70">\u00b7 {ago}</span>}
+      {ago && <span className="opacity-70"> · {ago}</span>}
     </span>
   );
 }

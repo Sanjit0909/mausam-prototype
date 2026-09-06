@@ -31,6 +31,28 @@ async def _fail(*_args, **_kwargs):
     raise RuntimeError("provider down")
 
 
+def test_sanitize_strips_thinking_process_and_keeps_draft():
+    raw = (
+        "Here's a thinking process:\n"
+        "Analyze User Input\n"
+        "The user asks about rain.\n"
+        "Check Weather Context\n"
+        "Rain probability is high.\n"
+        "Draft Response\n"
+        "Yes. Rain is likely today in Greater Noida. Carry an umbrella."
+    )
+    cleaned = ai_assistant.sanitize_ai_reply(raw)
+    assert "thinking process" not in cleaned.lower()
+    assert "Analyze User Input" not in cleaned
+    assert "Draft Response" not in cleaned
+    assert "Yes. Rain is likely today in Greater Noida" in cleaned
+
+
+def test_sanitize_leaves_clean_answer_alone():
+    text = "Yes. Rain is likely today. Carry an umbrella this evening."
+    assert ai_assistant.sanitize_ai_reply(text) == text
+
+
 @pytest.mark.asyncio
 async def test_chain_uses_deepseek_when_it_succeeds(monkeypatch):
     ai_assistant._provider_fail_until.clear()
@@ -47,7 +69,7 @@ async def test_chain_uses_deepseek_when_it_succeeds(monkeypatch):
     monkeypatch.setattr(ai_assistant, "_call_openrouter", _fail)
 
     reply, source = await ai_assistant.generate_reply(
-        "Should I run?", make_weather(), None, None, ["fitness"], []
+        "Should I run?", make_weather(), None, None, ["fitness"], [], locale="en"
     )
     assert source == "deepseek"
     assert reply == "from deepseek"
@@ -69,7 +91,7 @@ async def test_chain_falls_to_gemini_then_openrouter(monkeypatch):
     monkeypatch.setattr(ai_assistant, "_call_openrouter", _or_ok)
 
     reply, source = await ai_assistant.generate_reply(
-        "Will it rain?", make_weather(), None, None, [], []
+        "Will it rain?", make_weather(), None, None, [], [], locale="en"
     )
     assert source == "openrouter"
     assert reply == "from openrouter"
@@ -88,8 +110,23 @@ async def test_chain_falls_to_rule_engine_when_all_llms_fail(monkeypatch):
     monkeypatch.setattr(ai_assistant, "_call_openrouter", _fail)
 
     reply, source = await ai_assistant.generate_reply(
-        "Should I go for a run today?", make_weather(), None, None, [], []
+        "Should I go for a run today?", make_weather(), None, None, [], [], locale="en"
     )
     assert source == "fallback"
     assert "Test City" in reply
     assert "run" in reply.lower()
+
+
+@pytest.mark.asyncio
+async def test_hindi_fallback_rain_reply(monkeypatch):
+    ai_assistant._provider_fail_until.clear()
+    monkeypatch.setattr(ai_assistant.settings, "deepseek_api_key", "")
+    monkeypatch.setattr(ai_assistant.settings, "gemini_api_key", "")
+    monkeypatch.setattr(ai_assistant.settings, "openrouter_api_key", "")
+    ai_assistant._response_cache.clear()
+
+    reply, source = await ai_assistant.generate_reply(
+        "क्या आज बारिश होगी?", make_weather(), None, None, [], [], locale="hi"
+    )
+    assert source == "fallback"
+    assert "बारिश" in reply or "Test City" in reply

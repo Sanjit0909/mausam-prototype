@@ -37,7 +37,7 @@ export function AQICard({
           <p className="mt-1 text-xs text-mist-400">{data.category}</p>
         </div>
         {data.pm2_5 !== null && data.pm2_5 !== undefined && (
-          <p className="text-xs text-mist-400">PM2.5: {data.pm2_5.toFixed(0)} \u00b5g/m\u00b3</p>
+          <p className="text-xs text-mist-400">PM2.5: {data.pm2_5.toFixed(0)} µg/m³</p>
         )}
       </div>
       <div className="h-1.5 w-full rounded-full bg-white/5">
@@ -46,7 +46,7 @@ export function AQICard({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <SourceBadge provider={providerDisplayName(data.source)} kind="AQI" />
+      <SourceBadge provider={providerDisplayName(data.source)} kind={t("common.kind.aqi")} />
       {reason && <WhyThis reason={reason} />}
     </div>
   );

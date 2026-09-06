@@ -3,6 +3,7 @@
 import { Activity, Briefcase, Calendar, Car, Heart, Sprout, Users, Waves } from "lucide-react";
 import { WhyThis } from "@/components/common/WhyThis";
 import { useLanguage } from "@/context/LanguageContext";
+import { localizeAlertDescription, localizeAlertTitle } from "@/lib/i18n/localizeAlert";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import type { RecommendationCard as RecommendationCardType } from "@/lib/types";
 
@@ -30,9 +31,11 @@ const INTEREST_LABEL_KEYS: Record<string, TranslationKey> = {
 };
 
 export function RecommendationCard({ card }: { card: RecommendationCardType }) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const Icon = ICONS[card.icon] ?? Activity;
   const labelKey = INTEREST_LABEL_KEYS[card.interest];
+  const title = localizeAlertTitle(card.title, locale);
+  const description = localizeAlertDescription(card.description, locale);
 
   return (
     <div className="glass glass-hover rounded-3xl p-5 flex flex-col gap-3">
@@ -45,8 +48,8 @@ export function RecommendationCard({ card }: { card: RecommendationCardType }) {
         </div>
       </div>
       <div>
-        <h4 className="font-medium text-mist-100">{card.title}</h4>
-        <p className="mt-1 text-sm text-mist-400">{card.description}</p>
+        <h4 className="font-medium text-mist-100">{title}</h4>
+        <p className="mt-1 text-sm text-mist-400">{description}</p>
       </div>
       {card.reason && (
         <div className="border-t border-white/5 pt-2">

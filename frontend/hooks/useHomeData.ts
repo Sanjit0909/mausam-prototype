@@ -11,6 +11,8 @@ import type {
   ForecastResponse,
   InsightsResponse,
   MarineResponse,
+  PersonaHomePayload,
+  PersonaProfile,
   WeatherResponse,
 } from "@/lib/types";
 
@@ -22,6 +24,7 @@ interface HomeData {
   insights: InsightsResponse | null;
   astronomy: AstronomyResponse | null;
   marine: MarineResponse | null;
+  persona: PersonaHomePayload | null;
 }
 
 interface UseHomeDataResult extends HomeData {
@@ -39,9 +42,16 @@ const EMPTY: HomeData = {
   insights: null,
   astronomy: null,
   marine: null,
+  persona: null,
 };
 
-export function useHomeData(lat: number, lon: number, name: string | undefined, interests: string[]): UseHomeDataResult {
+export function useHomeData(
+  lat: number,
+  lon: number,
+  name: string | undefined,
+  interests: string[],
+  personaProfile?: PersonaProfile | null
+): UseHomeDataResult {
   const { t } = useLanguage();
   const [data, setData] = useState<HomeData>(EMPTY);
   const [loading, setLoading] = useState(true);
@@ -49,6 +59,7 @@ export function useHomeData(lat: number, lon: number, name: string | undefined, 
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   const hasDataRef = useRef(false);
+  const profileKey = JSON.stringify(personaProfile ?? null);
 
   const refresh = useCallback(() => setTick((n) => n + 1), []);
 
@@ -65,7 +76,15 @@ export function useHomeData(lat: number, lon: number, name: string | undefined, 
       setError(null);
 
       try {
-        const bundle = await getHomeBundle(lat, lon, interests, name, controller.signal, getInteractionQueryString());
+        const bundle = await getHomeBundle(
+          lat,
+          lon,
+          interests,
+          name,
+          controller.signal,
+          getInteractionQueryString(),
+          personaProfile
+        );
         if (cancelled) return;
         hasDataRef.current = true;
         setData({
@@ -76,6 +95,7 @@ export function useHomeData(lat: number, lon: number, name: string | undefined, 
           insights: bundle.insights,
           astronomy: bundle.astronomy,
           marine: bundle.marine,
+          persona: bundle.persona ?? null,
         });
         setError(null);
       } catch {
@@ -96,7 +116,7 @@ export function useHomeData(lat: number, lon: number, name: string | undefined, 
       cancelled = true;
       controller.abort();
     };
-  }, [lat, lon, name, interests.join(","), tick, t]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lat, lon, name, interests.join(","), profileKey, tick, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { ...data, loading, refreshing, error, refresh };
 }

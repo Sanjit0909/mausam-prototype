@@ -3,14 +3,16 @@
 import Link from "next/link";
 import { ChevronRight, TriangleAlert } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { localizeAlertTitle } from "@/lib/i18n/localizeAlert";
 import type { WeatherAlert } from "@/lib/types";
 
 export function AlertBanner({ alerts }: { alerts: WeatherAlert[] }) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   if (alerts.length === 0) return null;
 
   const top = [...alerts].sort((a, b) => severityRank(b.severity) - severityRank(a.severity))[0];
   const extra = alerts.length - 1;
+  const title = localizeAlertTitle(top.title, locale);
 
   return (
     <Link
@@ -19,7 +21,7 @@ export function AlertBanner({ alerts }: { alerts: WeatherAlert[] }) {
     >
       <TriangleAlert className="h-5 w-5 shrink-0 text-rose-400" />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-mist-100">{top.title}</p>
+        <p className="truncate text-sm font-medium text-mist-100">{title}</p>
         <p className="truncate text-xs text-mist-400">
           {extra > 0
             ? extra === 1

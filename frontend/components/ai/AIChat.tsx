@@ -31,7 +31,7 @@ interface DisplayMessage extends ChatMessage {
 export function AIChat() {
   const { location } = useLocation();
   const { preferences } = usePreferences();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const welcome = t("assistant.welcome", { name: location.name });
   const [messages, setMessages] = useState<DisplayMessage[]>([
     {
@@ -68,7 +68,15 @@ export function AIChat() {
     setError(null);
 
     try {
-      const res = await sendChatMessage(trimmed, location.lat, location.lon, locationLabel(location), preferences.interests, history);
+      const res = await sendChatMessage(
+        trimmed,
+        location.lat,
+        location.lon,
+        locationLabel(location),
+        preferences.interests,
+        history,
+        locale
+      );
       setMessages((prev) => [...prev, { role: "assistant", content: res.reply, source: res.source }]);
     } catch {
       setError(t("assistant.error"));
