@@ -9,13 +9,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { resolvePersonaId, type PersonaId } from "@/lib/personalization/personaConfig";
 import { locationLabel } from "@/lib/utils/format";
 import type { TranslationKey } from "@/lib/i18n/translations";
-import type { ChatMessage, ChatSource } from "@/lib/types";
-
-const SOURCE_LABELS: Record<Exclude<ChatSource, "fallback">, string> = {
-  deepseek: "DeepSeek V4 Flash",
-  gemini: "Gemini",
-  openrouter: "OpenRouter",
-};
+import type { ChatMessage } from "@/lib/types";
 
 const SUGGESTIONS: Record<PersonaId | "default", TranslationKey[]> = {
   farmer: ["home.ai.suggest.farmer1", "home.ai.suggest.farmer2", "home.ai.suggest.farmer3"],
@@ -28,10 +22,6 @@ const SUGGESTIONS: Record<PersonaId | "default", TranslationKey[]> = {
   default: ["assistant.suggest.run", "assistant.suggest.rain", "assistant.suggest.travel"],
 };
 
-interface DisplayMessage extends ChatMessage {
-  source?: ChatSource;
-}
-
 export function HomeAskMausamAI() {
   const { location } = useLocation();
   const { preferences } = usePreferences();
@@ -39,16 +29,12 @@ export function HomeAskMausamAI() {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const personaId = resolvePersonaId(
-    preferences.interests,
-    preferences.persona_profile?.primary_persona
-  );
+  const personaId = resolvePersonaId(preferences.interests, preferences.persona_profile?.primary_persona);
   const welcome = t("home.ai.welcome", { name: location.name });
-  const [messages, setMessages] = useState<DisplayMessage[]>([{ role: "assistant", content: welcome }]);
+  const [messages, setMessages] = useState<ChatMessage[]>([{ role: "assistant", content: welcome }]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const suggestionKeys = SUGGESTIONS[personaId] ?? SUGGESTIONS.default;
 
   useEffect(() => {
@@ -58,7 +44,7 @@ export function HomeAskMausamAI() {
 
   useEffect(() => {
     setMessages((prev) => {
-      if (prev.length === 1 && prev[0].role === "assistant" && !prev[0].source) {
+      if (prev.length === 1 && prev[0].role === "assistant") {
         return [{ ...prev[0], content: welcome }];
       }
       return prev;
@@ -85,7 +71,7 @@ export function HomeAskMausamAI() {
         personaId,
         preferences.persona_profile ? JSON.stringify(preferences.persona_profile) : undefined
       );
-      setMessages((prev) => [...prev, { role: "assistant", content: res.reply, source: res.source }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
     } catch {
       setError(t("assistant.error"));
     } finally {
@@ -149,11 +135,6 @@ export function HomeAskMausamAI() {
                     }`}
                   >
                     <p className="whitespace-pre-wrap">{m.content}</p>
-                    {m.source && (
-                      <p className="mt-1 text-[10px] text-mist-500">
-                        {m.source === "fallback" ? t("assistant.source.fallback") : SOURCE_LABELS[m.source]}
-                      </p>
-                    )}
                   </div>
                 </div>
               ))}
