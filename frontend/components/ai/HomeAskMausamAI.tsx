@@ -8,6 +8,7 @@ import { usePreferences } from "@/context/PreferencesContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { resolvePersonaId, type PersonaId } from "@/lib/personalization/personaConfig";
 import { locationLabel } from "@/lib/utils/format";
+import { cleanAiReply } from "@/lib/utils/cleanAiReply";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import type { ChatMessage } from "@/lib/types";
 
@@ -71,7 +72,7 @@ export function HomeAskMausamAI() {
         personaId,
         preferences.persona_profile ? JSON.stringify(preferences.persona_profile) : undefined
       );
-      setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: cleanAiReply(res.reply) }]);
     } catch {
       setError(t("assistant.error"));
     } finally {
