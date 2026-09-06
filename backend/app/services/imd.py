@@ -296,11 +296,13 @@ def _imd_condition(code: int | None) -> tuple[str, str]:
     return ("Unknown", "cloudy")
 
 
-def _wind_direction_degrees(code: Any) -> float:
+def _wind_direction_degrees(code: Any) -> float | None:
+    """Return degrees, or None when the observation does not include a direction."""
     value = _as_float(code)
     if value is None:
-        return 0.0
-    return 0.0 if value == 0 else float(value)
+        return None
+    # Explicit 0 can mean calm/variable depending on station; keep it when reported.
+    return float(value)
 
 
 async def _imd_get(path: str, params: dict[str, Any] | None = None) -> Any:
@@ -553,13 +555,16 @@ def _normalize_current(
     if temp is None:
         raise UpstreamAPIError("imd", "IMD observation missing temperature")
 
-    humidity = _as_float(_pick(row, "Humidity", "humidity", "RH")) or 0.0
-    wind_speed = _as_float(_pick(row, "Wind Speed", "Wind_Speed", "wind_speed", "WIND_SPEED")) or 0.0
-    pressure = _as_float(_pick(row, "M.S.L.P", "MSLP", "Pressure", "pressure")) or 0.0
-    precip = _as_float(_pick(row, "Last 24 hrs Rainfall", "Rainfall", "rainfall")) or 0.0
+    # Do NOT coerce missing numerics to 0 — pressure 0 hPa is misleading; field-level
+    # fallback in weather_provider fills gaps from Open-Meteo / Weatherstack.
+    humidity = _as_float(_pick(row, "Humidity", "humidity", "RH"))
+    wind_speed = _as_float(_pick(row, "Wind Speed", "Wind_Speed", "wind_speed", "WIND_SPEED"))
+    pressure = _as_float(_pick(row, "M.S.L.P", "MSLP", "Pressure", "pressure"))
+    precip = _as_float(_pick(row, "Last 24 hrs Rainfall", "Rainfall", "rainfall"))
     wx_code = _as_int(_pick(row, "Weather Code", "Weather_Code", "weather_code", "WeatherCode", "WEATHER_CODE"))
     condition, group = _imd_condition(wx_code)
-    feels = _as_float(_pick(row, "Feel Like", "feels_like", "Feels_Like")) or temp
+    feels_raw = _as_float(_pick(row, "Feel Like", "feels_like", "Feels_Like"))
+    feels = feels_raw if feels_raw is not None else temp
     obs_name = str(_pick(row, "Station", "Station_Name") or station_name or "").strip() or station_name
     obs_id = _current_station_id(row) or station_id
 

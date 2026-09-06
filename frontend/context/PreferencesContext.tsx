@@ -5,7 +5,16 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import type { InterestKey, LocationInfo, PersonaProfile } from "@/lib/types";
 
-const PERSONA_PROFILE_KEY = "mausam:personaProfile";
+/** Legacy unscoped keys — cleared on logout so they cannot leak across accounts. */
+const LEGACY_PERSONA_PROFILE_KEY = "mausam:personaProfile";
+const LEGACY_INTERESTS_KEY = "mausam:interests";
+
+function personaProfileKey(userId: string) {
+  return `mausam:personaProfile:${userId}`;
+}
+function interestsKey(userId: string) {
+  return `mausam:interests:${userId}`;
+}
 
 export interface PreferencesData {
   name: string;
@@ -25,10 +34,18 @@ export const DEFAULT_PREFERENCES: PreferencesData = {
   persona_profile: null,
 };
 
-function readLocalPersonaProfile(): PersonaProfile | null {
+function clearLegacyPreferenceCaches() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(LEGACY_PERSONA_PROFILE_KEY);
+  localStorage.removeItem(LEGACY_INTERESTS_KEY);
+}
+
+function readLocalPersonaProfile(userId: string): PersonaProfile | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(PERSONA_PROFILE_KEY);
+    const raw =
+      localStorage.getItem(personaProfileKey(userId)) ??
+      localStorage.getItem(LEGACY_PERSONA_PROFILE_KEY);
     if (!raw) return null;
     return JSON.parse(raw) as PersonaProfile;
   } catch {
@@ -36,13 +53,40 @@ function readLocalPersonaProfile(): PersonaProfile | null {
   }
 }
 
-function writeLocalPersonaProfile(profile: PersonaProfile | null) {
+function writeLocalPersonaProfile(userId: string, profile: PersonaProfile | null) {
   if (typeof window === "undefined") return;
+  const key = personaProfileKey(userId);
   if (!profile) {
-    localStorage.removeItem(PERSONA_PROFILE_KEY);
+    localStorage.removeItem(key);
     return;
   }
-  localStorage.setItem(PERSONA_PROFILE_KEY, JSON.stringify(profile));
+  localStorage.setItem(key, JSON.stringify(profile));
+  // Drop legacy unscoped copy once a scoped write succeeds.
+  localStorage.removeItem(LEGACY_PERSONA_PROFILE_KEY);
+}
+
+function readLocalInterests(userId: string): InterestKey[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw =
+      localStorage.getItem(interestsKey(userId)) ?? localStorage.getItem(LEGACY_INTERESTS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as InterestKey[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalInterests(userId: string, interests: InterestKey[]) {
+  if (typeof window === "undefined") return;
+  const key = interestsKey(userId);
+  if (!interests.length) {
+    localStorage.removeItem(key);
+    return;
+  }
+  localStorage.setItem(key, JSON.stringify(interests));
+  localStorage.removeItem(LEGACY_INTERESTS_KEY);
 }
 
 interface PreferencesContextValue {
@@ -69,12 +113,14 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     if (!user) {
       setPreferences(DEFAULT_PREFERENCES);
+      clearLegacyPreferenceCaches();
       setLoading(false);
       return;
     }
     setLoading(true);
     const supabase = createClient();
-    const localProfile = readLocalPersonaProfile();
+    const localProfile = readLocalPersonaProfile(user.id);
+    const localInterests = readLocalInterests(user.id);
 
     // Prefer extended select; fall back if persona_profile column is not migrated yet.
     let data: Record<string, unknown> | null = null;
@@ -97,12 +143,16 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
     if (data) {
       const remoteProfile = (data.persona_profile as PersonaProfile | null | undefined) ?? null;
+      // Remote wins when present; local is only a reload-race / migration fallback for *this* user.
       const persona_profile = remoteProfile ?? localProfile;
-      if (persona_profile) writeLocalPersonaProfile(persona_profile);
+      if (persona_profile) writeLocalPersonaProfile(user.id, persona_profile);
+      const remoteInterests = (data.interests as InterestKey[]) ?? [];
+      const interests = remoteInterests.length > 0 ? remoteInterests : localInterests;
+      if (interests.length) writeLocalInterests(user.id, interests);
       setPreferences({
         ...DEFAULT_PREFERENCES,
         name: (data.name as string) ?? "",
-        interests: (data.interests as InterestKey[]) ?? [],
+        interests,
         preferred_location: (data.preferred_location as LocationInfo | null) ?? null,
         notification_prefs: (data.notification_prefs as PreferencesData["notification_prefs"]) ??
           DEFAULT_PREFERENCES.notification_prefs,
@@ -113,6 +163,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       const seeded: PreferencesData = {
         ...DEFAULT_PREFERENCES,
         name: user.email?.split("@")[0] ?? "",
+        interests: localInterests,
         persona_profile: localProfile,
       };
       await supabase.from("preferences").upsert({
@@ -136,7 +187,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     const next = { ...preferences, ...patch };
     if ("persona_profile" in patch) {
-      writeLocalPersonaProfile(next.persona_profile);
+      writeLocalPersonaProfile(user.id, next.persona_profile);
+    }
+    if ("interests" in patch) {
+      writeLocalInterests(user.id, next.interests);
     }
     setPreferences(next);
     const supabase = createClient();

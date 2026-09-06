@@ -17,11 +17,10 @@ import logging
 
 from ..config import settings
 from ..models.persona import AgrometAdvisoryStatus, FarmerProfile
+from .persona_locale import agromet_unavailable_message, t
 
 logger = logging.getLogger(__name__)
 
-# Optional future endpoint override (not present in current credentials scope).
-# Example if IMD grants a crop-advisory path: /api/v1/agromet_advisory
 _AGROMET_PATH_ENV = "imd_agromet_advisory_path"
 
 
@@ -37,12 +36,8 @@ async def fetch_official_agromet_advisory(
     farmer: FarmerProfile | None = None,
     locale: str = "en",
 ) -> AgrometAdvisoryStatus:
-    """Attempt official Agromet advisory. Currently returns honest unavailable state.
-
-    Do not scrape KALP/Meghdoot HTML. When IMD grants an API path, implement the
-    HTTP call here and populate advisory fields with provenance timestamps.
-    """
-    _ = (lat, lon, locale)  # reserved for future request params
+    """Attempt official Agromet advisory. Currently returns honest unavailable state."""
+    _ = (lat, lon)  # reserved for future request params
     crop = farmer.crop if farmer else None
     stage = farmer.crop_stage if farmer else None
 
@@ -50,14 +45,11 @@ async def fetch_official_agromet_advisory(
         return AgrometAdvisoryStatus(
             available=False,
             status="not_configured",
-            message=(
-                "IMD credentials are not fully configured for Agromet crop advisories. "
-                "Use the official KALP portal for crop-stage advisories. "
-                "MAUSAM weather-based farm cards below are derived, not official IMD advisories."
-            ),
+            message=agromet_unavailable_message(locale, configured_creds=False),
             crop_relevance=crop,
             crop_stage_relevance=stage,
             portal_url="https://webgis.imd.gov.in/agro",
+            language=locale,
         )
 
     if not is_official_agromet_configured():
@@ -68,22 +60,23 @@ async def fetch_official_agromet_advisory(
         return AgrometAdvisoryStatus(
             available=False,
             status="unavailable",
-            message=(
-                "Official IMD Meghdoot/KALP crop advisory API is not wired into this deployment. "
-                "District weather warnings from IMD remain available separately. "
-                "Farm cards below are MAUSAM-derived from live weather and are not labelled as IMD advisories."
-            ),
+            message=agromet_unavailable_message(locale, configured_creds=True),
             crop_relevance=crop,
             crop_stage_relevance=stage,
             portal_url="https://webgis.imd.gov.in/agro",
-            source_label="IMD Agromet (not connected)",
+            source_label=t(locale, "IMD Agromet (not connected)", "IMD एग्रोमेट (कनेक्ट नहीं)"),
+            language=locale,
         )
 
-    # Future: authenticated GET to configured path. Keep unavailable until implemented.
     return AgrometAdvisoryStatus(
         available=False,
         status="unavailable",
-        message="Agromet advisory endpoint configured but not yet implemented.",
+        message=t(
+            locale,
+            "Agromet advisory endpoint configured but not yet implemented.",
+            "Agromet सलाह एंडपॉइंट कॉन्फ़िगर है, पर अभी लागू नहीं किया गया है।",
+        ),
         crop_relevance=crop,
         crop_stage_relevance=stage,
+        language=locale,
     )

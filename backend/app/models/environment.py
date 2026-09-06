@@ -1,5 +1,5 @@
 """Schemas for AQI, marine, astronomy, and historical data."""
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .common import LocationInfo
 
@@ -25,6 +25,14 @@ class MarineConditions(BaseModel):
     swell_wave_height: float | None = None
     swell_wave_direction: float | None = None
     swell_wave_period: float | None = None
+    # Additional Open-Meteo Marine fields when the model returns them.
+    ocean_current_velocity: float | None = None
+    ocean_current_direction: float | None = None
+    sea_surface_temperature: float | None = None
+    sea_level_height_msl: float | None = None
+    wind_wave_height: float | None = None
+    wind_wave_direction: float | None = None
+    wind_wave_period: float | None = None
 
 
 class TideEvent(BaseModel):
@@ -38,8 +46,14 @@ class MarineResponse(BaseModel):
     available: bool = True
     current: MarineConditions | None = None
     tides: list[TideEvent] = []
-    is_demo_tide: bool = True
+    is_demo_tide: bool = False
     source: str = "open-meteo-marine"
+    # Provenance: never label Stormglass/Open-Meteo as INCOIS.
+    wave_source: str | None = "Open-Meteo Marine (model)"
+    tide_source: str | None = None
+    incois_status: str = "unavailable"
+    provider_label: str | None = None
+    field_availability: dict[str, bool] = Field(default_factory=dict)
 
 
 class AstronomyResponse(BaseModel):

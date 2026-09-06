@@ -101,13 +101,13 @@ async def get_current_weather(lat: float, lon: float, name: str | None = None) -
         condition_code=weather0["id"],
         condition_group=group,
         is_day=is_day,
-        humidity=main["humidity"],
-        wind_speed=raw.get("wind", {}).get("speed", 0) * 3.6,  # m/s -> km/h
-        wind_direction=raw.get("wind", {}).get("deg", 0),
-        pressure=main["pressure"],
-        precipitation=0,  # not reliably present on this endpoint
+        humidity=main.get("humidity"),
+        wind_speed=(raw["wind"]["speed"] * 3.6) if raw.get("wind") and raw["wind"].get("speed") is not None else None,
+        wind_direction=raw["wind"].get("deg") if raw.get("wind") and raw["wind"].get("deg") is not None else None,
+        pressure=main.get("pressure"),
+        precipitation=None,  # not reliably present on this endpoint — do not fake 0
         uv_index=None,  # needs a separate OWM endpoint - omitted rather than guessed
-        visibility=(raw["visibility"] / 1000) if raw.get("visibility") else None,
+        visibility=(raw["visibility"] / 1000.0) if raw.get("visibility") is not None else None,
         observed_at=observed_at,
     )
 

@@ -29,14 +29,15 @@ export interface CurrentWeather {
   condition_code: number;
   condition_group: ConditionGroup;
   is_day: boolean;
-  humidity: number;
-  wind_speed: number;
-  wind_direction: number;
-  pressure: number;
-  precipitation: number;
+  humidity?: number | null;
+  wind_speed?: number | null;
+  wind_direction?: number | null;
+  pressure?: number | null;
+  precipitation?: number | null;
   uv_index?: number | null;
   visibility?: number | null;
   observed_at: string;
+  field_sources?: Record<string, { value?: number | null; source?: string | null; category?: string }>;
 }
 
 export interface WeatherResponse {
@@ -48,6 +49,7 @@ export interface WeatherResponse {
   observation_station?: string | null;
   observation_station_id?: string | null;
   station_distance_km?: number | null;
+  field_sources?: Record<string, { value?: number | null; source?: string | null; category?: string }>;
 }
 
 export interface HourlyPoint {
@@ -102,6 +104,13 @@ export interface MarineConditions {
   swell_wave_height?: number | null;
   swell_wave_direction?: number | null;
   swell_wave_period?: number | null;
+  ocean_current_velocity?: number | null;
+  ocean_current_direction?: number | null;
+  sea_surface_temperature?: number | null;
+  sea_level_height_msl?: number | null;
+  wind_wave_height?: number | null;
+  wind_wave_direction?: number | null;
+  wind_wave_period?: number | null;
 }
 
 export interface TideEvent {
@@ -117,6 +126,11 @@ export interface MarineResponse {
   tides: TideEvent[];
   is_demo_tide: boolean;
   source: string;
+  wave_source?: string | null;
+  tide_source?: string | null;
+  incois_status?: string;
+  provider_label?: string | null;
+  field_availability?: Record<string, boolean>;
 }
 
 export interface AstronomyResponse {
@@ -294,6 +308,8 @@ export interface ChatRequest {
   units?: string;
   history: ChatMessage[];
   locale?: string;
+  primary_persona?: string | null;
+  persona_profile_json?: string | null;
 }
 
 export type ChatSource = "deepseek" | "gemini" | "openrouter" | "fallback";
@@ -301,6 +317,8 @@ export type ChatSource = "deepseek" | "gemini" | "openrouter" | "fallback";
 export interface ChatResponse {
   reply: string;
   source: ChatSource;
+  fallback_used?: boolean;
+  model?: string | null;
 }
 
 export interface ApiErrorPayload {

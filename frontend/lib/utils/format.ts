@@ -8,15 +8,41 @@ export function formatPercent(value: number | null | undefined): string {
   return `${Math.round(value)}%`;
 }
 
-const COMPASS_POINTS = [
+export function formatWind(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "--";
+  return `${value.toFixed(0)} km/h`;
+}
+
+export function formatPressure(value: number | null | undefined): string {
+  // Pressure 0 is invalid and must never display as a real observation.
+  if (value === null || value === undefined || Number.isNaN(value) || value <= 0) return "--";
+  return `${value.toFixed(0)} hPa`;
+}
+
+export function formatVisibility(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "--";
+  return `${value.toFixed(1)} km`;
+}
+
+export function formatUv(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "--";
+  return value.toFixed(1).replace(/\.0$/, "");
+}
+
+const COMPASS_POINTS_EN = [
   "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
   "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW",
 ];
 
-export function windDirectionLabel(degrees: number | null | undefined): string {
+const COMPASS_POINTS_HI = [
+  "उ", "उ-उपू", "उपू", "पू-उपू", "पू", "पू-दपू", "दपू", "द-दपू",
+  "द", "द-दप", "दप", "प-दप", "प", "प-उप", "उप", "उ-उप",
+];
+
+export function windDirectionLabel(degrees: number | null | undefined, locale: string = "en"): string {
   if (degrees === null || degrees === undefined) return "--";
   const index = Math.round(degrees / 22.5) % 16;
-  return COMPASS_POINTS[index];
+  return (locale === "hi" ? COMPASS_POINTS_HI : COMPASS_POINTS_EN)[index];
 }
 
 export function formatTime(iso: string | null | undefined, timezone?: string | null, locale: string = "en"): string {
@@ -91,6 +117,7 @@ export function locationLabel(loc: { name: string; admin1?: string | null; count
 }
 
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
+  "imd+fallback": "IMD + fallback",
   imd: "IMD",
   "open-meteo": "Open-Meteo",
   "open-meteo-marine": "Open-Meteo",
@@ -102,6 +129,7 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   unavailable: "Unavailable",
   nws: "NWS",
   derived: "MAUSAM Advisory",
+  estimated: "Estimated",
   deepseek: "DeepSeek",
   gemini: "Gemini",
   openrouter: "OpenRouter",
@@ -115,7 +143,11 @@ export function providerDisplayName(source: string): string {
   return PROVIDER_DISPLAY_NAMES[source.toLowerCase()] ?? source;
 }
 
-/** Localize presentation labels for known advisory/provider strings. Keeps IMD/Open-Meteo brand forms. */
+/**
+ * Localize presentation labels for known advisory/provider strings.
+ * Never remaps Open-Meteo / OpenWeatherMap / Weatherstack / Stormglass to IMD.
+ * IMD wording is only used for labels that are actually IMD (or pure "imd").
+ */
 export function localizeProviderLabel(
   provider: string,
   t: (key: "common.advisory" | "common.imdOfficialWarning" | "common.imdNowcast" | "common.imdCurrentWeather") => string
@@ -123,14 +155,34 @@ export function localizeProviderLabel(
   const raw = (provider || "").trim();
   const key = raw.toLowerCase();
   if (!raw) return raw;
+
+  // Non-IMD providers must keep their own identity even if the phrase contains
+  // "current weather" / "model" / similar wording.
+  if (
+    key.includes("open-meteo") ||
+    key.includes("openmeteo") ||
+    key.includes("openweathermap") ||
+    key.includes("weatherstack") ||
+    key.includes("stormglass") ||
+    key.includes("incois")
+  ) {
+    return raw;
+  }
+
   if (key === "derived" || key === "mausam advisory" || key.includes("mausam advisory")) {
     return t("common.advisory");
   }
-  if (key.includes("nowcast")) return t("common.imdNowcast");
-  if (key.includes("current weather")) return t("common.imdCurrentWeather");
+  if (key.includes("nowcast") && key.includes("imd")) return t("common.imdNowcast");
+  // Only remap IMD current-weather phrases — never generic "current weather".
+  if (key.includes("imd") && key.includes("current weather")) return t("common.imdCurrentWeather");
   if (key.includes("official warning") || (key.includes("imd") && key.includes("warning"))) {
     return t("common.imdOfficialWarning");
   }
   if (key === "imd") return "IMD";
   return PROVIDER_DISPLAY_NAMES[key] ?? raw;
+}
+
+/** True only when the weather bundle is pure IMD (no field-level fallbacks mixed in). */
+export function isPureImdWeatherSource(source: string | null | undefined): boolean {
+  return (source || "").trim().toLowerCase() === "imd";
 }

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { PersonaHomeDashboard } from "@/components/personalization/PersonaHomeDashboard";
 import { PersonaSwitcher } from "@/components/personalization/PersonaSwitcher";
+import { HomeAskMausamAI } from "@/components/ai/HomeAskMausamAI";
 import { LocationSearch } from "@/components/location/LocationSearch";
 import { HeroSkeleton, GridSkeleton, Skeleton } from "@/components/common/LoadingSkeleton";
 import { ErrorState } from "@/components/common/ErrorState";
@@ -73,6 +74,8 @@ export default function HomePage() {
       </div>
 
       <PersonaSwitcher />
+
+      <HomeAskMausamAI />
 
       {refreshing && weather && <p className="text-xs text-mist-500">{t("home.updating")}</p>}
 

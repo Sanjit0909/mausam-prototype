@@ -5,7 +5,14 @@ import { MapPin } from "lucide-react";
 import { SourceBadge } from "@/components/common/SourceBadge";
 import { WeatherIcon } from "@/components/weather/WeatherIcon";
 import { useLanguage } from "@/context/LanguageContext";
-import { formatTemp, localizeProviderLabel, locationLabel, providerDisplayName } from "@/lib/utils/format";
+import {
+  formatTemp,
+  isPureImdWeatherSource,
+  localizeProviderLabel,
+  locationLabel,
+  providerDisplayName,
+} from "@/lib/utils/format";
+import { localizeWeatherCondition } from "@/lib/i18n/localizeWeather";
 import type { WeatherResponse } from "@/lib/types";
 
 interface WeatherHeroProps {
@@ -64,7 +71,9 @@ export function WeatherHero({ weather, title, subtitle }: WeatherHeroProps) {
             <span className="text-7xl font-semibold tracking-tight text-mist-100 md:text-8xl">
               {formatTemp(current.temperature)}
             </span>
-            <span className="mb-3 text-lg text-mist-300">{current.condition}</span>
+            <span className="mb-3 text-lg text-mist-300">
+              {localizeWeatherCondition(current.condition, locale)}
+            </span>
           </div>
 
           <p className="mt-2 text-mist-400">
@@ -79,7 +88,9 @@ export function WeatherHero({ weather, title, subtitle }: WeatherHeroProps) {
             }
             kind={t("home.currentConditions")}
             updatedAt={current.observed_at}
-            official={weather.source === "imd"}
+            // Shield only for pure IMD observation bundles — never for Open-Meteo /
+            // OpenWeatherMap / Weatherstack / mixed field-fallback responses.
+            official={isPureImdWeatherSource(weather.source)}
             className="mt-3"
           />
           {weather.observation_station && (

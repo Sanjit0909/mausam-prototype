@@ -16,12 +16,12 @@ import { useLocation } from "@/context/LocationContext";
 import { usePreferences } from "@/context/PreferencesContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useHomeData } from "@/hooks/useHomeData";
-import { formatPercent, locationLabel, windDirectionLabel } from "@/lib/utils/format";
+import { formatPercent, formatPressure, formatVisibility, formatWind, locationLabel, windDirectionLabel } from "@/lib/utils/format";
 
 export default function WeatherDetailsPage() {
   const { location } = useLocation();
   const { preferences } = usePreferences();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { weather, forecast, airQuality, astronomy, marine, loading, error, refresh } = useHomeData(
     location.lat,
     location.lon,
@@ -60,18 +60,18 @@ export default function WeatherDetailsPage() {
             <WeatherMetricCard
               icon={Wind}
               label={t("home.wind")}
-              value={`${weather.current.wind_speed.toFixed(0)} km/h`}
-              sublabel={windDirectionLabel(weather.current.wind_direction)}
+              value={formatWind(weather.current.wind_speed)}
+              sublabel={windDirectionLabel(weather.current.wind_direction, locale)}
             />
             <WeatherMetricCard
               icon={Gauge}
               label={t("home.pressure")}
-              value={`${weather.current.pressure.toFixed(0)} hPa`}
+              value={formatPressure(weather.current.pressure)}
             />
             <WeatherMetricCard
               icon={Eye}
               label={t("home.visibility")}
-              value={weather.current.visibility ? `${weather.current.visibility.toFixed(1)} km` : "--"}
+              value={formatVisibility(weather.current.visibility)}
             />
             <UVCard uvIndex={weather.current.uv_index} />
             {airQuality && <AQICard data={airQuality} />}

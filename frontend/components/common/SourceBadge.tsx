@@ -33,7 +33,27 @@ function sourceLabel(provider: string, imdLabel: string, nwsLabel: string): stri
 export function SourceBadge({ provider, kind, updatedAt, official = false, className = "" }: SourceBadgeProps) {
   const { t } = useLanguage();
   const normalized = provider.trim().toLowerCase();
-  const isImdOfficial = official && normalized.includes("imd");
+  // Shield only for explicitly official IMD observation/warning — never for
+  // "IMD Agromet (not connected)", derived, estimated, or model providers.
+  const looksNonImdProvider =
+    normalized.includes("open-meteo") ||
+    normalized.includes("openmeteo") ||
+    normalized.includes("openweathermap") ||
+    normalized.includes("weatherstack") ||
+    normalized.includes("stormglass") ||
+    normalized.includes("incois");
+  const looksUnavailable =
+    looksNonImdProvider ||
+    normalized.includes("not connected") ||
+    normalized.includes("unavailable") ||
+    normalized.includes("not an official") ||
+    normalized.includes("derived") ||
+    normalized.includes("estimated") ||
+    normalized.includes("field fallback") ||
+    normalized.includes("field merge");
+  // Official IMD shield only when caller opted in AND label is actually IMD —
+  // never for Open-Meteo / OpenWeatherMap / Weatherstack / mixed fallbacks.
+  const isImdOfficial = official && normalized.includes("imd") && !looksUnavailable;
 
   let ago = "";
   if (updatedAt) {

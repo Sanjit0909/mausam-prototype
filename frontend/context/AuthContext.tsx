@@ -40,9 +40,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    const uid = user?.id;
     const supabase = createClient();
     await supabase.auth.signOut();
     setUser(null);
+    try {
+      // Legacy unscoped caches + this session's scoped preference caches only.
+      window.localStorage.removeItem("mausam:personaProfile");
+      window.localStorage.removeItem("mausam:interests");
+      if (uid) {
+        window.localStorage.removeItem(`mausam:personaProfile:${uid}`);
+        window.localStorage.removeItem(`mausam:interests:${uid}`);
+      }
+    } catch {
+      /* ignore */
+    }
   };
 
   return <AuthContext.Provider value={{ user, loading, signOut }}>{children}</AuthContext.Provider>;

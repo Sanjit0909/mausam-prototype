@@ -52,7 +52,7 @@ export function useHomeData(
   interests: string[],
   personaProfile?: PersonaProfile | null
 ): UseHomeDataResult {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [data, setData] = useState<HomeData>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -83,7 +83,8 @@ export function useHomeData(
           name,
           controller.signal,
           getInteractionQueryString(),
-          personaProfile
+          personaProfile,
+          locale
         );
         if (cancelled) return;
         hasDataRef.current = true;
@@ -116,7 +117,7 @@ export function useHomeData(
       cancelled = true;
       controller.abort();
     };
-  }, [lat, lon, name, interests.join(","), profileKey, tick, t]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lat, lon, name, interests.join(","), profileKey, tick, t, locale]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { ...data, loading, refreshing, error, refresh };
 }

@@ -95,7 +95,7 @@ async def get_current_weather(lat: float, lon: float, name: str | None = None) -
         pressure=current["pressure_msl"],
         precipitation=current.get("precipitation", 0),
         uv_index=current.get("uv_index"),
-        visibility=(hourly_visibility / 1000) if hourly_visibility else None,
+        visibility=(hourly_visibility / 1000.0) if hourly_visibility is not None else None,
         observed_at=current.get("time", datetime.now(timezone.utc).isoformat()),
     )
 

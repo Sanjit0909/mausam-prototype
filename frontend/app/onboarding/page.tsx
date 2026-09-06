@@ -42,10 +42,14 @@ export default function OnboardingPage() {
           ? "runner"
           : selected.includes("travel")
             ? "traveller"
-            : null,
+            : selected.includes("marine_beach")
+              ? "marine"
+              : null,
     };
     await updatePreferences({ interests: selected, persona_profile });
+    // Ensure local interests are readable before /home remounts PreferencesProvider.
     router.push("/home");
+    router.refresh();
   };
 
   return (
