@@ -10,10 +10,12 @@ const SatelliteWeatherMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[640px] w-full rounded-3xl bg-navy-900/60 border border-white/10 flex items-center justify-center">
+      <div className="relative h-[640px] w-full overflow-hidden rounded-3xl border border-white/10 bg-navy-950/80 animate-shimmer flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 rounded-full border-2 border-sky-400 border-t-transparent animate-spin" />
-          <p className="text-xs text-mist-400">Loading satellite terrain & radar viewer...</p>
+          <div className="h-10 w-10 rounded-2xl bg-sky-500/10 border border-sky-400/20 flex items-center justify-center text-sky-400 shadow-lg shadow-sky-500/10">
+            <Satellite className="h-5 w-5 animate-pulse" />
+          </div>
+          <p className="text-xs font-medium text-mist-300">Initializing 2D/3D Weather Cockpit...</p>
         </div>
       </div>
     ),

@@ -128,33 +128,63 @@ export function ExpandablePersonaCard({ card }: { card: PersonaCard }) {
   const Icon = CARD_ICONS[card.id] ?? (card.id.startsWith("crop_risk") ? AlertTriangle : Leaf);
   const supportRows = formatSupportRows(card.supporting_data || {}, locale);
 
+  const isBestRunTime = card.id === "best_run_time";
+  const isAgromet = card.id === "agromet_advisory" || card.id === "crop_stage";
+
   return (
-    <div className="glass overflow-hidden rounded-3xl border border-white/10">
+    <div
+      className={`glass group overflow-hidden rounded-3xl border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${
+        isBestRunTime
+          ? "border-amber-400/35 bg-gradient-to-br from-amber-500/[0.07] via-transparent to-transparent shadow-[0_4px_25px_rgba(251,191,36,0.08)]"
+          : isAgromet
+          ? "border-emerald-500/35 bg-gradient-to-br from-emerald-500/[0.06] via-transparent to-transparent"
+          : "border-white/10 hover:border-white/20"
+      }`}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-start gap-4 px-5 py-5 text-left transition-colors hover:bg-white/[0.03] sm:px-6"
       >
-        <div className="mt-0.5 rounded-2xl bg-sky-500/10 p-2.5 shrink-0">
-          <Icon className="h-5 w-5 text-sky-300" />
+        <div
+          className={`mt-0.5 rounded-2xl p-2.5 shrink-0 transition-transform duration-300 group-hover:scale-105 ${
+            isBestRunTime
+              ? "bg-amber-500/15 text-amber-300"
+              : isAgromet
+              ? "bg-emerald-500/15 text-emerald-300"
+              : "bg-sky-500/10 text-sky-300"
+          }`}
+        >
+          <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base font-semibold text-mist-100">{title}</h3>
+            <h3 className="text-base font-semibold text-mist-100 transition-colors group-hover:text-white">
+              {title}
+            </h3>
+            {isBestRunTime && (
+              <span className="rounded-full bg-amber-400/20 border border-amber-400/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300 animate-pulse [animation-duration:3s]">
+                Optimal Window
+              </span>
+            )}
             <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-mist-300">
               {t(PROVENANCE_KEY[card.provenance] ?? "persona.provenance.derived")}
             </span>
           </div>
           <p className="mt-1.5 text-sm leading-relaxed text-mist-300">{summary}</p>
-          <p className="mt-2 text-[11px] text-mist-500">{t("persona.tapExpand")}</p>
+          <p className="mt-2 text-[11px] text-mist-500 transition-colors group-hover:text-mist-400">
+            {t("persona.tapExpand")}
+          </p>
         </div>
         <ChevronDown
-          className={`mt-1 h-5 w-5 shrink-0 text-mist-400 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`mt-1 h-5 w-5 shrink-0 text-mist-400 transition-transform duration-300 ${
+            open ? "rotate-180 text-sky-300" : ""
+          }`}
         />
       </button>
 
       {open && (
-        <div className="space-y-4 border-t border-white/5 px-5 py-5 text-sm text-mist-300 sm:px-6">
+        <div className="space-y-4 border-t border-white/5 px-5 py-5 text-sm text-mist-300 sm:px-6 animate-in fade-in slide-in-from-top-2 duration-200">
           {detail && (
             <div>
               <p className="text-[10px] uppercase tracking-wide text-mist-500">{t("persona.explanation")}</p>

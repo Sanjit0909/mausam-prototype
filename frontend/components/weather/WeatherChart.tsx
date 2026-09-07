@@ -2,6 +2,7 @@
 
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useLanguage } from "@/context/LanguageContext";
+import { useReducedMotion } from "@/components/common/Motion";
 import { formatHourLabel } from "@/lib/utils/format";
 import type { HourlyPoint } from "@/lib/types";
 
@@ -30,9 +31,9 @@ function ChartTooltip({
 }) {
   if (!active || !payload || !payload.length) return null;
   return (
-    <div className="glass rounded-xl px-3 py-2 text-xs">
+    <div className="glass rounded-xl px-3 py-2 text-xs border border-white/15 shadow-xl animate-in fade-in zoom-in-95 duration-150">
       <p className="text-mist-400">{label ? formatHourLabel(label, locale) : ""}</p>
-      <p className="font-semibold text-mist-100">
+      <p className="font-semibold text-mist-100 mt-0.5">
         {payload[0].value}
         {suffix}
       </p>
@@ -42,6 +43,8 @@ function ChartTooltip({
 
 export function WeatherChart({ hourly, variant = "temperature", limit = 24 }: WeatherChartProps) {
   const { locale, t } = useLanguage();
+  const reducedMotion = useReducedMotion();
+
   const data = hourly.slice(0, limit).map((h) => ({
     time: h.time,
     temperature: Math.round(h.temperature),
@@ -66,7 +69,14 @@ export function WeatherChart({ hourly, variant = "temperature", limit = 24 }: We
             />
             <YAxis tick={{ fill: "#8b9bc2", fontSize: 11 }} axisLine={false} tickLine={false} width={36} unit="%" />
             <Tooltip content={<ChartTooltip suffix={t("home.chartRainSuffix")} locale={locale} />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-            <Bar dataKey="rain" fill="#29b6f6" radius={[6, 6, 0, 0]} />
+            <Bar
+              dataKey="rain"
+              fill="#29b6f6"
+              radius={[6, 6, 0, 0]}
+              isAnimationActive={!reducedMotion}
+              animationDuration={850}
+              animationEasing="ease-out"
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -94,7 +104,22 @@ export function WeatherChart({ hourly, variant = "temperature", limit = 24 }: We
           />
           <YAxis tick={{ fill: "#8b9bc2", fontSize: 11 }} axisLine={false} tickLine={false} width={36} unit="°" />
           <Tooltip content={<ChartTooltip suffix="°" locale={locale} />} cursor={{ stroke: "rgba(255,255,255,0.15)" }} />
-          <Area type="monotone" dataKey="temperature" stroke="#4fc3f7" strokeWidth={2} fill="url(#tempGradient)" />
+          <Area
+            type="monotone"
+            dataKey="temperature"
+            stroke="#4fc3f7"
+            strokeWidth={2.5}
+            fill="url(#tempGradient)"
+            isAnimationActive={!reducedMotion}
+            animationDuration={900}
+            animationEasing="ease-out"
+            activeDot={{
+              r: 5,
+              fill: "#4fc3f7",
+              stroke: "#080b16",
+              strokeWidth: 2,
+            }}
+          />
         </AreaChart>
       </ResponsiveContainer>
     </div>

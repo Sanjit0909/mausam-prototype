@@ -29,23 +29,32 @@ export function UVCard({
 
   return (
     <div
-      className="glass glass-hover flex min-h-[8.5rem] cursor-pointer flex-col gap-3 rounded-3xl p-4 sm:p-5"
+      className="glass group relative flex min-h-[8.5rem] cursor-pointer flex-col justify-between overflow-hidden rounded-3xl p-4 sm:p-5 transition-all duration-300 hover:-translate-y-1 hover:border-sky-400/30 hover:shadow-[0_12px_35px_rgba(0,0,0,0.45),0_0_20px_rgba(56,189,248,0.08)]"
       onClick={onActivate}
       role={onActivate ? "button" : undefined}
       tabIndex={onActivate ? 0 : undefined}
     >
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wide text-mist-400">{t("home.uvIndex")}</span>
-        <Sun className={`h-4 w-4 ${color}`} />
+        <span className="text-xs font-medium uppercase tracking-wide text-mist-400 transition-colors group-hover:text-mist-200">
+          {t("home.uvIndex")}
+        </span>
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.04] transition-all duration-300 group-hover:bg-white/[0.08] group-hover:scale-105">
+          <Sun className={`h-4 w-4 ${color} transition-transform duration-300 group-hover:scale-110 group-hover:rotate-45`} />
+        </div>
       </div>
-      <div>
-        <p className={`text-2xl font-semibold ${color}`}>
-          {uvIndex !== null && uvIndex !== undefined ? uvIndex.toFixed(0) : "--"}
-        </p>
-        <p className="mt-1 text-xs text-mist-400">{labelKey ? t(labelKey) : "--"}</p>
-      </div>
-      <div className="h-1.5 w-full rounded-full bg-white/5">
-        <div className={`h-1.5 rounded-full ${color.replace("text-", "bg-")}`} style={{ width: `${pct}%` }} />
+      <div className="space-y-2">
+        <div>
+          <p className={`text-2xl font-semibold transition-all ${color}`}>
+            {uvIndex !== null && uvIndex !== undefined ? uvIndex.toFixed(0) : "--"}
+          </p>
+          <p className="mt-0.5 text-xs text-mist-400">{labelKey ? t(labelKey) : "--"}</p>
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+          <div
+            className={`h-1.5 rounded-full transition-all duration-700 ease-out ${color.replace("text-", "bg-")}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
       </div>
       {reason && <WhyThis reason={reason} />}
     </div>

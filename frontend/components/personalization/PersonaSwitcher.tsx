@@ -89,14 +89,14 @@ export function PersonaSwitcher() {
               key={persona.id}
               type="button"
               onClick={() => handleSwitch(persona)}
-              className={`flex min-h-11 items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium transition-colors ${
+              className={`flex min-h-11 items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-medium transition-all duration-200 active:scale-95 ${
                 isActive
-                  ? "border-sky-400/60 bg-sky-500/15 text-sky-300"
-                  : "border-white/10 bg-white/[0.03] text-mist-300 hover:bg-white/10"
+                  ? "border-sky-400/70 bg-sky-500/20 text-sky-200 shadow-lg shadow-sky-500/20 scale-[1.02]"
+                  : "border-white/10 bg-white/[0.03] text-mist-300 hover:border-white/20 hover:bg-white/[0.07] hover:text-mist-100"
               }`}
             >
-              <Icon className="h-3.5 w-3.5" />
-              {t(persona.labelKey)}
+              <Icon className={`h-3.5 w-3.5 transition-transform ${isActive ? "scale-110 text-sky-400" : ""}`} />
+              <span>{t(persona.labelKey)}</span>
             </button>
           );
         })}

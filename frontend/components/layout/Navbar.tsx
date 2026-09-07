@@ -54,29 +54,33 @@ export function Navbar() {
               </Link>
 
               <nav className="hidden md:flex items-center gap-1">
-                {NAV_LINKS.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`min-h-11 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                      pathname.startsWith(link.href)
-                        ? "bg-white/10 text-mist-100"
-                        : "text-mist-400 hover:text-mist-100 hover:bg-white/5"
-                    }`}
-                  >
-                    {t(link.labelKey)}
-                  </Link>
-                ))}
+                {NAV_LINKS.map((link) => {
+                  const isActive = pathname.startsWith(link.href);
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`relative min-h-11 flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-95 ${
+                        isActive
+                          ? "bg-white/10 text-white font-semibold shadow-sm border border-white/10"
+                          : "text-mist-400 hover:text-mist-100 hover:bg-white/5"
+                      }`}
+                    >
+                      {isActive && <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />}
+                      <span>{t(link.labelKey)}</span>
+                    </Link>
+                  );
+                })}
               </nav>
             </div>
 
             <div className="flex items-center gap-2 md:gap-3">
               <Link
                 href="/explore"
-                className="hidden sm:flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-mist-300 hover:bg-white/10 hover:text-mist-100 transition-colors"
+                className="hidden sm:flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-sm text-mist-300 hover:border-sky-400/40 hover:bg-white/10 hover:text-mist-100 active:scale-95 transition-all duration-200"
               >
                 <MapPin className="h-3.5 w-3.5 text-sky-400" />
-                <span className="max-w-[140px] truncate">{location.name}</span>
+                <span className="max-w-[140px] truncate font-medium">{location.name}</span>
                 <Search className="h-3.5 w-3.5 opacity-60" />
               </Link>
 
@@ -84,7 +88,7 @@ export function Navbar() {
 
               <Link
                 href="/alerts"
-                className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-mist-300 transition-colors hover:bg-white/10 hover:text-mist-100"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-mist-300 transition-all duration-200 hover:bg-white/10 hover:text-mist-100 active:scale-95"
                 aria-label={t("nav.alerts")}
               >
                 <Bell className="h-5 w-5" />
@@ -93,34 +97,34 @@ export function Navbar() {
               <div className="relative hidden sm:block">
                 <button
                   onClick={() => setProfileOpen((v) => !v)}
-                  className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-mist-100 transition-colors hover:bg-white/20"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-mist-100 transition-all duration-200 hover:bg-white/20 active:scale-95"
                   aria-label={t("nav.profileMenu")}
                 >
                   <User className="h-4 w-4" />
                 </button>
                 {profileOpen && (
                   <div
-                    className="glass absolute right-0 mt-2 w-52 rounded-2xl p-2 text-sm"
+                    className="glass absolute right-0 mt-2 w-52 rounded-2xl p-2 text-sm border border-white/10 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
                     onMouseLeave={() => setProfileOpen(false)}
                   >
-                    <p className="truncate px-3 py-2 text-xs text-mist-400">{user?.email}</p>
+                    <p className="truncate px-3 py-2 text-xs text-mist-400 border-b border-white/5">{user?.email}</p>
                     <Link
                       href="/profile"
-                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-mist-200 hover:bg-white/10"
+                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-mist-200 hover:bg-white/10 transition-colors"
                       onClick={() => setProfileOpen(false)}
                     >
                       <Settings className="h-4 w-4" /> {t("nav.profileFull")}
                     </Link>
                     <Link
                       href="/assistant"
-                      className="flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-mist-200 hover:bg-white/10"
+                      className="flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-mist-200 hover:bg-white/10 transition-colors"
                       onClick={() => setProfileOpen(false)}
                     >
                       <MessageCircle className="h-4 w-4" /> {t("nav.assistant")}
                     </Link>
                     <button
                       onClick={handleSignOut}
-                      className="flex min-h-11 w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-rose-400 hover:bg-rose-500/10"
+                      className="flex min-h-11 w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-rose-400 hover:bg-rose-500/10 transition-colors"
                     >
                       <LogOut className="h-4 w-4" /> {t("nav.signOut")}
                     </button>
@@ -130,7 +134,7 @@ export function Navbar() {
 
               <button
                 onClick={() => setMenuOpen((v) => !v)}
-                className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-mist-300 hover:bg-white/10 md:hidden"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-mist-300 hover:bg-white/10 active:scale-95 transition-all md:hidden"
                 aria-label={t("nav.menu")}
               >
                 {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -139,23 +143,23 @@ export function Navbar() {
           </div>
 
           {menuOpen && (
-            <div className="md:hidden border-t border-white/5 px-4 py-3 flex flex-col gap-1">
+            <div className="md:hidden border-t border-white/5 px-4 py-3 flex flex-col gap-1 animate-in fade-in slide-in-from-top-2 duration-200">
               {NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setMenuOpen(false)}
-                  className={`min-h-11 rounded-xl px-3 py-2 text-sm font-medium ${
-                    pathname.startsWith(link.href) ? "bg-white/10 text-mist-100" : "text-mist-300"
+                  className={`min-h-11 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
+                    pathname.startsWith(link.href) ? "bg-white/10 text-mist-100 font-semibold" : "text-mist-300 hover:bg-white/5"
                   }`}
                 >
                   {t(link.labelKey)}
                 </Link>
               ))}
-              <Link href="/profile" onClick={() => setMenuOpen(false)} className="min-h-11 rounded-xl px-3 py-2 text-sm text-mist-300">
+              <Link href="/profile" onClick={() => setMenuOpen(false)} className="min-h-11 rounded-xl px-3 py-2 text-sm text-mist-300 hover:bg-white/5">
                 {t("nav.profileFull")}
               </Link>
-              <button onClick={handleSignOut} className="min-h-11 rounded-xl px-3 py-2 text-left text-sm text-rose-400">
+              <button onClick={handleSignOut} className="min-h-11 rounded-xl px-3 py-2 text-left text-sm text-rose-400 hover:bg-rose-500/10">
                 {t("nav.signOut")}
               </button>
             </div>

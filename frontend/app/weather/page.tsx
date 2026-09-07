@@ -13,6 +13,7 @@ import { MarineCard } from "@/components/weather/MarineCard";
 import { WeatherMapCard, MarineMapCard } from "@/components/weather/WeatherMapCard";
 import { HeroSkeleton, GridSkeleton, Skeleton } from "@/components/common/LoadingSkeleton";
 import { ErrorState } from "@/components/common/ErrorState";
+import { Reveal, StaggerContainer } from "@/components/common/Motion";
 import { useLocation } from "@/context/LocationContext";
 import { usePreferences } from "@/context/PreferencesContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -31,7 +32,7 @@ export default function WeatherDetailsPage() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 md:px-8 md:py-8">
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 md:px-8 md:py-8 animate-in fade-in duration-300">
       <div>
         <h1 className="text-xl font-semibold text-mist-100">{t("weather.title")}</h1>
         <p className="text-sm text-mist-400">{t("weather.subtitle", { name: location.name })}</p>
@@ -51,63 +52,80 @@ export default function WeatherDetailsPage() {
         <>
           <WeatherHero weather={weather} />
 
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <WeatherMetricCard
-              icon={Thermometer}
-              label={t("weather.feelsLike")}
-              value={`${weather.current.feels_like.toFixed(0)}°`}
-            />
-            <WeatherMetricCard icon={Droplets} label={t("home.humidity")} value={formatPercent(weather.current.humidity)} />
-            <WeatherMetricCard
-              icon={Wind}
-              label={t("home.wind")}
-              value={formatWind(weather.current.wind_speed)}
-              sublabel={windDirectionLabel(weather.current.wind_direction, locale)}
-            />
-            <WeatherMetricCard
-              icon={Gauge}
-              label={t("home.pressure")}
-              value={formatPressure(weather.current.pressure)}
-            />
-            <WeatherMetricCard
-              icon={Eye}
-              label={t("home.visibility")}
-              value={formatVisibility(weather.current.visibility)}
-            />
-            <UVCard uvIndex={weather.current.uv_index} />
-            {airQuality && <AQICard data={airQuality} />}
-          </div>
+          <Reveal delay={60}>
+            <StaggerContainer className="grid grid-cols-2 gap-4 md:grid-cols-4" staggerMs={50}>
+              <WeatherMetricCard
+                icon={Thermometer}
+                label={t("weather.feelsLike")}
+                value={`${weather.current.feels_like.toFixed(0)}°`}
+              />
+              <WeatherMetricCard icon={Droplets} label={t("home.humidity")} value={formatPercent(weather.current.humidity)} />
+              <WeatherMetricCard
+                icon={Wind}
+                label={t("home.wind")}
+                value={formatWind(weather.current.wind_speed)}
+                sublabel={windDirectionLabel(weather.current.wind_direction, locale)}
+                windDeg={weather.current.wind_direction}
+              />
+              <WeatherMetricCard
+                icon={Gauge}
+                label={t("home.pressure")}
+                value={formatPressure(weather.current.pressure)}
+              />
+              <WeatherMetricCard
+                icon={Eye}
+                label={t("home.visibility")}
+                value={formatVisibility(weather.current.visibility)}
+              />
+              <UVCard uvIndex={weather.current.uv_index} />
+              {airQuality && <AQICard data={airQuality} />}
+            </StaggerContainer>
+          </Reveal>
 
           {forecast && (
             <>
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <div className="glass rounded-3xl p-6">
-                  <h3 className="mb-2 text-sm font-semibold text-mist-200">{t("weather.tempTrend48")}</h3>
-                  <WeatherChart hourly={forecast.hourly} variant="temperature" limit={48} />
+              <Reveal delay={100}>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <div className="glass rounded-3xl p-6">
+                    <h3 className="mb-2 text-sm font-semibold text-mist-200">{t("weather.tempTrend48")}</h3>
+                    <WeatherChart hourly={forecast.hourly} variant="temperature" limit={48} />
+                  </div>
+                  <div className="glass rounded-3xl p-6">
+                    <h3 className="mb-2 text-sm font-semibold text-mist-200">{t("weather.rainProb48")}</h3>
+                    <WeatherChart hourly={forecast.hourly} variant="rain" limit={48} />
+                  </div>
                 </div>
-                <div className="glass rounded-3xl p-6">
-                  <h3 className="mb-2 text-sm font-semibold text-mist-200">{t("weather.rainProb48")}</h3>
-                  <WeatherChart hourly={forecast.hourly} variant="rain" limit={48} />
-                </div>
-              </div>
-              <HourlyForecast hourly={forecast.hourly} limit={48} />
-              <DailyForecast daily={forecast.daily} />
+              </Reveal>
 
-              <WeatherMapCard
-                lat={location.lat}
-                lon={location.lon}
-                locationName={location.name}
-              />
+              <Reveal delay={120}>
+                <HourlyForecast hourly={forecast.hourly} limit={48} />
+              </Reveal>
+
+              <Reveal delay={140}>
+                <DailyForecast daily={forecast.daily} />
+              </Reveal>
+
+              <Reveal delay={160}>
+                <WeatherMapCard
+                  lat={location.lat}
+                  lon={location.lon}
+                  locationName={location.name}
+                />
+              </Reveal>
             </>
           )}
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {astronomy && <SunMoonCard data={astronomy} />}
-            {marine && marine.available && <MarineCard data={marine} />}
-          </div>
+          <Reveal delay={180}>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {astronomy && <SunMoonCard data={astronomy} />}
+              {marine && marine.available && <MarineCard data={marine} />}
+            </div>
+          </Reveal>
 
           {marine && marine.available && (
-            <MarineMapCard locationName={location.name} />
+            <Reveal delay={200}>
+              <MarineMapCard locationName={location.name} />
+            </Reveal>
           )}
         </>
       )}

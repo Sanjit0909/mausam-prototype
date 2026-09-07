@@ -15,6 +15,7 @@ import { AlertBanner } from "@/components/alerts/AlertBanner";
 import { PersonalizedInsight } from "@/components/personalization/PersonalizedInsight";
 import { RecommendationCard } from "@/components/personalization/RecommendationCard";
 import { ExpandablePersonaCard } from "@/components/personalization/ExpandablePersonaCard";
+import { Reveal, StaggerContainer } from "@/components/common/Motion";
 import { trackCardInteraction } from "@/hooks/useInteractionTracking";
 import { useLanguage } from "@/context/LanguageContext";
 import { getPersonaConfig, type HomeSectionId, type PersonaId } from "@/lib/personalization/personaConfig";
@@ -141,6 +142,7 @@ export function PersonaHomeDashboard({
         sublabel={windDirectionLabel(current.wind_direction, locale)}
         accentClassName="text-sky-400"
         reason={reasons.wind}
+        windDeg={current.wind_direction}
         onActivate={() => trackCardInteraction("wind")}
       />
     ),
@@ -239,11 +241,11 @@ export function PersonaHomeDashboard({
         return (
           <div key={key}>
             <h2 className="mb-3 text-sm font-semibold text-mist-200">{t("persona.section.moreMetrics")}</h2>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <StaggerContainer className="grid grid-cols-2 gap-4 md:grid-cols-4" staggerMs={50}>
               {orderedMetricKeys.map((metricKey) => (
                 <div key={metricKey}>{metricRenderers[metricKey]}</div>
               ))}
-            </div>
+            </StaggerContainer>
           </div>
         );
       case "recommendations":
@@ -252,11 +254,11 @@ export function PersonaHomeDashboard({
             <h2 className="mb-3 text-sm font-semibold text-mist-200">
               {t(personaConfig.terminology.recommendations as TranslationKey)}
             </h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <StaggerContainer className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" staggerMs={60}>
               {insights.recommendations.map((card, i) => (
                 <RecommendationCard key={i} card={card} />
               ))}
-            </div>
+            </StaggerContainer>
           </div>
         ) : null;
       case "charts":
@@ -296,5 +298,17 @@ export function PersonaHomeDashboard({
     }
   };
 
-  return <div className="space-y-5">{sectionOrder.map((section, idx) => renderSection(section, `${section}-${idx}`))}</div>;
+  return (
+    <div key={personaId} className="space-y-6 animate-in fade-in duration-300">
+      {sectionOrder.map((section, idx) => {
+        const rendered = renderSection(section, `${section}-${idx}`);
+        if (!rendered) return null;
+        return (
+          <Reveal key={`${personaId}-${section}-${idx}`} delay={Math.min(idx * 40, 200)}>
+            {rendered}
+          </Reveal>
+        );
+      })}
+    </div>
+  );
 }
