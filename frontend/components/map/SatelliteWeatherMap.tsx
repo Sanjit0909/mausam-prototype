@@ -27,7 +27,12 @@ import type { LocationSearchResult } from "@/lib/types";
 
 // Free, reliable tile providers
 const ESRI_SATELLITE = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-const ESRI_BOUNDARIES = "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
+const CARTO_VOYAGER_LABELS = [
+  "https://a.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png",
+  "https://b.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png",
+  "https://c.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png",
+  "https://d.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png",
+];
 const DEM_TERRAIN = "https://demotiles.maplibre.org/terrain-tiles/{z}/{x}/{y}.png";
 
 // Popular Indian cities for instant exploration
@@ -138,6 +143,8 @@ export function SatelliteWeatherMap({
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
+      minZoom: 2,
+      maxZoom: 18,
       style: {
         version: 8,
         sources: {
@@ -145,17 +152,21 @@ export function SatelliteWeatherMap({
             type: "raster",
             tiles: [ESRI_SATELLITE],
             tileSize: 256,
+            maxzoom: 18,
             attribution: "© Esri, Maxar, Earthstar Geographics",
           },
-          "esri-labels": {
+          "carto-labels": {
             type: "raster",
-            tiles: [ESRI_BOUNDARIES],
+            tiles: CARTO_VOYAGER_LABELS,
             tileSize: 256,
+            maxzoom: 20,
+            attribution: "© CARTO, © OpenStreetMap",
           },
           "dem-terrain": {
             type: "raster-dem",
             tiles: [DEM_TERRAIN],
             tileSize: 256,
+            maxzoom: 12,
             encoding: "mapbox",
           },
         },
@@ -169,8 +180,8 @@ export function SatelliteWeatherMap({
           {
             id: "labels-layer",
             type: "raster",
-            source: "esri-labels",
-            paint: { "raster-opacity": 0.85 },
+            source: "carto-labels",
+            paint: { "raster-opacity": 0.95 },
           },
         ],
       },
@@ -279,6 +290,7 @@ export function SatelliteWeatherMap({
           type: "raster",
           tiles: [tileUrl],
           tileSize: 256,
+          maxzoom: 12,
         });
         map.addLayer(
           {
@@ -301,6 +313,7 @@ export function SatelliteWeatherMap({
           type: "raster",
           tiles: [tileUrl],
           tileSize: 256,
+          maxzoom: 12,
         });
         map.addLayer(
           {
@@ -357,19 +370,21 @@ export function SatelliteWeatherMap({
 
     let width = (canvas.width = canvas.parentElement?.clientWidth || 800);
     let height = (canvas.height = canvas.parentElement?.clientHeight || 600);
+    ctx.clearRect(0, 0, width, height);
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         width = canvas.width = entry.contentRect.width;
         height = canvas.height = entry.contentRect.height;
+        ctx.clearRect(0, 0, width, height);
       }
     });
     if (canvas.parentElement) {
       resizeObserver.observe(canvas.parentElement);
     }
 
-    // Generate stream particles
-    const particleCount = 200;
+    // Generate rich streamline wind particles
+    const particleCount = 500;
     const particles: Array<{
       x: number;
       y: number;
@@ -377,16 +392,27 @@ export function SatelliteWeatherMap({
       length: number;
       angle: number;
       alpha: number;
+      color: string;
+      lineWidth: number;
     }> = [];
+
+    const palettes = [
+      "rgba(45, 212, 191, ",  // Teal 400
+      "rgba(56, 189, 248, ",  // Sky 400
+      "rgba(125, 211, 252, ", // Sky 300
+      "rgba(255, 255, 255, ", // Bright white glint
+    ];
 
     for (let i = 0; i < particleCount; i++) {
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        speed: 1.5 + Math.random() * 2.5,
-        length: 8 + Math.random() * 12,
-        angle: 0.35 + (Math.random() - 0.5) * 0.25, // WNW/Monsoon streamline flow
-        alpha: 0.2 + Math.random() * 0.7,
+        speed: 1.2 + Math.random() * 2.4,
+        length: 10 + Math.random() * 18,
+        angle: 0.35 + (Math.random() - 0.5) * 0.25, // Indian monsoon southwest to northeast streamline flow
+        alpha: 0.35 + Math.random() * 0.55,
+        color: palettes[Math.floor(Math.random() * palettes.length)],
+        lineWidth: 1.2 + Math.random() * 1.2,
       });
     }
 
@@ -394,16 +420,18 @@ export function SatelliteWeatherMap({
     const render = () => {
       if (!running) return;
 
-      // Soft fade trail
-      ctx.fillStyle = "rgba(5, 7, 13, 0.12)";
+      // Soft fade trail using destination-out to preserve 100% transparent canvas so the satellite map underneath stays vivid
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
       ctx.fillRect(0, 0, width, height);
+      ctx.globalCompositeOperation = "source-over";
 
       for (const p of particles) {
         const dx = Math.cos(p.angle) * p.speed;
         const dy = Math.sin(p.angle) * p.speed;
 
-        ctx.strokeStyle = `rgba(79, 195, 247, ${p.alpha})`;
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = `${p.color}${p.alpha})`;
+        ctx.lineWidth = p.lineWidth;
         ctx.lineCap = "round";
 
         ctx.beginPath();
@@ -430,6 +458,7 @@ export function SatelliteWeatherMap({
       if (animFrameIdRef.current) {
         cancelAnimationFrame(animFrameIdRef.current);
       }
+      ctx.clearRect(0, 0, width, height);
       resizeObserver.disconnect();
     };
   }, [activeLayer]);
@@ -712,6 +741,60 @@ export function SatelliteWeatherMap({
             <span>Light Rain</span>
             <div className="flex h-2 w-36 rounded-full bg-gradient-to-r from-sky-400 via-emerald-400 via-amber-400 to-rose-600 shadow-inner" />
             <span>Heavy Storm</span>
+          </div>
+        </div>
+      )}
+
+      {/* WIND VECTORS HUD / LEGEND */}
+      {activeLayer === "wind" && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center gap-3 rounded-2xl border border-white/15 bg-navy-950/90 px-4 py-2.5 backdrop-blur-2xl shadow-xl text-xs">
+          <div className="flex items-center gap-1.5 font-semibold text-teal-300">
+            <Wind className="h-4 w-4 animate-spin [animation-duration:8s]" />
+            <span>Live Streamlines ({location.name})</span>
+          </div>
+          <div className="h-3.5 w-px bg-white/15 hidden sm:block" />
+          <div className="flex items-center gap-3 text-[11px] text-mist-300">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-teal-400 shadow-[0_0_8px_#2dd4bf]" /> Light (&lt;15 km/h)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-sky-400 shadow-[0_0_8px_#38bdf8]" /> Moderate (15–35 km/h)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-indigo-400 shadow-[0_0_8px_#818cf8]" /> Gale (35+ km/h)
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* SATELLITE INFRARED CLOUD HUD */}
+      {activeLayer === "satellite" && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded-2xl border border-white/15 bg-navy-950/90 px-4 py-2.5 backdrop-blur-2xl shadow-xl text-xs">
+          <div className="flex items-center gap-1.5 font-semibold text-indigo-300">
+            <Eye className="h-4 w-4" />
+            <span>Infrared Cloud Top</span>
+          </div>
+          <div className="h-3.5 w-px bg-white/15 hidden sm:block" />
+          <div className="flex items-center gap-2 text-[11px] text-mist-300">
+            <span>Low Cloud</span>
+            <div className="flex h-2 w-24 rounded-full bg-gradient-to-r from-white/20 via-white/60 to-white shadow-inner" />
+            <span>Deep Storm</span>
+          </div>
+        </div>
+      )}
+
+      {/* TEMPERATURE HEATMAP LEGEND */}
+      {activeLayer === "temp" && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded-2xl border border-white/15 bg-navy-950/90 px-4 py-2.5 backdrop-blur-2xl shadow-xl text-xs">
+          <div className="flex items-center gap-1.5 font-semibold text-amber-300">
+            <Sun className="h-4 w-4" />
+            <span>Thermal Heatmap</span>
+          </div>
+          <div className="h-3.5 w-px bg-white/15 hidden sm:block" />
+          <div className="flex items-center gap-2 text-[11px] text-mist-300">
+            <span className="text-sky-300">10°C</span>
+            <div className="flex h-2 w-28 rounded-full bg-gradient-to-r from-sky-400 via-amber-400 to-rose-600 shadow-inner" />
+            <span className="text-rose-400">45°C</span>
           </div>
         </div>
       )}
