@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Bot, Loader2, Send, Sparkles, User } from "lucide-react";
-import { sendChatMessage } from "@/lib/api/ai";
+import { sendChatMessage, streamChatMessage } from "@/lib/api/ai";
 import { useLocation } from "@/context/LocationContext";
 import { usePreferences } from "@/context/PreferencesContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -62,22 +62,50 @@ export function AIChat() {
     if (!trimmed || loading) return;
 
     const history = messages.map(({ role, content }) => ({ role, content }));
-    setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: trimmed },
+      { role: "assistant", content: "" },
+    ]);
     setInput("");
     setLoading(true);
     setError(null);
 
+    let accumulated = "";
     try {
-      const res = await sendChatMessage(
+      await streamChatMessage(
         trimmed,
         location.lat,
         location.lon,
         locationLabel(location),
         preferences.interests,
         history,
-        locale
+        locale,
+        (token) => {
+          accumulated += token;
+          setMessages((prev) => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
+              updated[lastIdx] = { ...updated[lastIdx], content: accumulated };
+            }
+            return updated;
+          });
+        },
+        (meta) => {
+          setMessages((prev) => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
+              updated[lastIdx] = {
+                ...updated[lastIdx],
+                source: (meta.source as ChatSource) ?? undefined,
+              };
+            }
+            return updated;
+          });
+        }
       );
-      setMessages((prev) => [...prev, { role: "assistant", content: res.reply, source: res.source }]);
     } catch {
       setError(t("assistant.error"));
     } finally {

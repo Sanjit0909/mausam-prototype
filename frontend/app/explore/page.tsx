@@ -1,8 +1,24 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { MapPin } from "lucide-react";
+import { MapPin, Satellite, Sparkles } from "lucide-react";
+import dynamic from "next/dynamic";
 import { LocationSearch } from "@/components/location/LocationSearch";
+
+const SatelliteWeatherMap = dynamic(
+  () => import("@/components/map/SatelliteWeatherMap").then((m) => m.SatelliteWeatherMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[640px] w-full rounded-3xl bg-navy-900/60 border border-white/10 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 rounded-full border-2 border-sky-400 border-t-transparent animate-spin" />
+          <p className="text-xs text-mist-400">Loading satellite terrain & radar viewer...</p>
+        </div>
+      </div>
+    ),
+  }
+);
 import { useLocation } from "@/context/LocationContext";
 import { useLanguage } from "@/context/LanguageContext";
 import type { LocationSearchResult } from "@/lib/types";
@@ -25,28 +41,49 @@ export default function ExplorePage() {
 
   const handleSelect = (loc: LocationSearchResult) => {
     setLocation(loc);
-    router.push("/home");
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
-      <h1 className="text-xl font-semibold text-mist-100">{t("explore.title")}</h1>
-      <p className="mt-1 text-sm text-mist-400">{t("explore.subtitle", { name: location.name })}</p>
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-8 md:py-8">
+      {/* Page Header with Search */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <h1 className="text-xl font-semibold text-mist-100">Live Satellite & Radar Map</h1>
+          </div>
+          <p className="mt-1 text-sm text-mist-400">
+            Real-time Doppler precipitation, satellite cloud imagery, and 3D terrain elevation for {location.name}
+          </p>
+        </div>
 
-      <div className="mt-6">
-        <LocationSearch autoFocus onSelect={handleSelect} placeholder={t("explore.search")} />
+        <div className="w-full sm:w-80">
+          <LocationSearch autoFocus onSelect={handleSelect} placeholder={t("explore.search")} />
+        </div>
       </div>
 
+      {/* Interactive 2D / 3D Satellite Map Viewer */}
+      <SatelliteWeatherMap height="640px" />
+
+      {/* Popular Cities Grid */}
       <div className="mt-8">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-mist-400">{t("explore.popular")}</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-mist-400">
+          {t("explore.popular")}
+        </h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {POPULAR_CITIES.map((city) => (
             <button
               key={city.name}
               onClick={() => handleSelect(city)}
-              className="glass glass-hover flex items-center gap-2 rounded-2xl p-4 text-left"
+              className={`glass glass-hover flex items-center gap-2.5 rounded-2xl p-3.5 text-left transition-all ${
+                location.name === city.name
+                  ? "border-sky-400/50 bg-sky-500/10 shadow-lg shadow-sky-500/10"
+                  : ""
+              }`}
             >
-              <MapPin className="h-4 w-4 shrink-0 text-sky-400" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 text-sky-400 shrink-0">
+                <MapPin className="h-4 w-4" />
+              </div>
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-mist-100">{city.name}</p>
                 <p className="truncate text-xs text-mist-400">{city.admin1}</p>
