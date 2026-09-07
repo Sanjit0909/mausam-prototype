@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapPin } from "lucide-react";
+import Link from "next/link";
+import { MapPin, Satellite } from "lucide-react";
 import { SourceBadge } from "@/components/common/SourceBadge";
 import { WeatherIcon } from "@/components/weather/WeatherIcon";
 import { useLanguage } from "@/context/LanguageContext";
@@ -55,9 +56,18 @@ export function WeatherHero({ weather, title, subtitle }: WeatherHeroProps) {
       <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-sky-500/10 blur-3xl" />
       <div className="relative flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
         <div>
-          <div className="flex items-center gap-1.5 text-sm text-mist-300">
-            <MapPin className="h-4 w-4 text-sky-400" />
-            <span>{locationLabel(location)}</span>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5 text-sm text-mist-300">
+              <MapPin className="h-4 w-4 text-sky-400" />
+              <span>{locationLabel(location)}</span>
+            </div>
+            <Link
+              href="/map"
+              className="inline-flex items-center gap-1.5 rounded-full border border-sky-400/30 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-300 hover:bg-sky-500/20 transition-colors"
+            >
+              <Satellite className="h-3.5 w-3.5 text-sky-400" />
+              <span>Live 2D/3D Radar Map</span>
+            </Link>
           </div>
 
           {(title || subtitle) && (

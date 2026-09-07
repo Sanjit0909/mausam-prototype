@@ -79,6 +79,70 @@ def classify_question_complexity(message: str) -> str:
     return "complex" if _is_complex_question(message) else "simple"
 
 
+import json
+
+
+def build_hyperlocal_json_context(
+    *,
+    weather: WeatherResponse,
+    forecast: ForecastResponse | None = None,
+    air_quality: AirQualityResponse | None = None,
+    alerts: list[WeatherAlert] | None = None,
+    interests: list[str] | None = None,
+    profile: PersonaProfile | None = None,
+) -> dict[str, Any]:
+    """Compile the user's live weather state into concise, structured JSON matching Task 3 specification."""
+    current = weather.current
+    interests_list = interests or []
+
+    wind_str = "unavailable"
+    if current.wind_speed is not None:
+        direction_deg = current.wind_direction or 0
+        dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
+        idx = int((direction_deg + 11.25) / 22.5) % 16
+        wind_str = f"{current.wind_speed:.0f} km/h {dirs[idx]}"
+
+    precip_chance_str = "0%"
+    if forecast and forecast.hourly:
+        prob = forecast.hourly[0].precipitation_probability
+        if prob is not None:
+            precip_chance_str = f"{prob:.0f}%"
+    elif current.precipitation and current.precipitation > 0:
+        precip_chance_str = "100%"
+
+    alerts_list: list[dict[str, Any]] = []
+    if alerts:
+        for a in alerts[:5]:
+            alerts_list.append({
+                "title": a.title,
+                "severity": a.severity,
+                "description": a.description[:120],
+                "source": a.source,
+            })
+
+    return {
+        "user": {
+            "city": weather.location.name,
+            "coordinates": {
+                "lat": round(weather.location.lat, 4),
+                "lon": round(weather.location.lon, 4),
+            },
+            "interests": interests_list,
+        },
+        "realtime_weather": {
+            "temperature": f"{current.temperature:.0f}°C" if current.temperature is not None else "unavailable",
+            "apparent_temp": f"{current.feels_like:.0f}°C" if current.feels_like is not None else "unavailable",
+            "condition": current.condition or "Partly Cloudy",
+            "humidity": f"{current.humidity:.0f}%" if current.humidity is not None else "unavailable",
+            "wind": wind_str,
+            "aqi": air_quality.us_aqi if air_quality and air_quality.us_aqi is not None else None,
+            "uv_index": round(current.uv_index) if current.uv_index is not None else None,
+            "precipitation_chance": precip_chance_str,
+            "alerts": alerts_list,
+        },
+    }
+
+
 def build_ai_context(
     *,
     weather: WeatherResponse,
@@ -96,7 +160,17 @@ def build_ai_context(
     """Assemble grounded context. Missing values are labelled unavailable — never invented."""
     interests = interests or []
     current = weather.current
+    json_ctx = build_hyperlocal_json_context(
+        weather=weather,
+        forecast=forecast,
+        air_quality=air_quality,
+        alerts=alerts,
+        interests=interests,
+        profile=profile,
+    )
     lines: list[str] = [
+        "=== MAUSAM HYPER-LOCAL LIVE WEATHER STATE (JSON) ===",
+        json.dumps(json_ctx, indent=2),
         "=== MAUSAM GROUNDED CONTEXT (do not invent values outside this block) ===",
         f"Location: {weather.location.name} (lat={weather.location.lat:.4f}, lon={weather.location.lon:.4f})",
         f"Observation bundle source label: {weather.provider_label or weather.source}",

@@ -12,6 +12,9 @@ from ..services.marine_provider import get_marine
 from ..services.persona_engine import build_persona_home
 from ..services.weather_provider import get_current_weather, get_forecast
 
+from fastapi.responses import StreamingResponse
+from ..services.ai_assistant import generate_reply, stream_reply
+
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 
 # Enrichment must not block the first token of a reply for too long.
@@ -38,8 +41,7 @@ def _parse_profile(request: ChatRequest) -> PersonaProfile | None:
     return profile
 
 
-@router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest) -> ChatResponse:
+async def _prepare_chat_context(request: ChatRequest):
     weather_task = asyncio.create_task(get_current_weather(request.lat, request.lon, request.location_name))
     forecast_task = asyncio.create_task(get_forecast(request.lat, request.lon, days=3, name=request.location_name))
     air_quality_task = asyncio.create_task(get_air_quality(request.lat, request.lon, request.location_name))
@@ -71,6 +73,12 @@ async def chat(request: ChatRequest) -> ChatResponse:
     except Exception:  # noqa: BLE001
         persona = None
 
+    return weather, forecast, air_quality, alerts, marine, persona, profile
+
+
+@router.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest) -> ChatResponse:
+    weather, forecast, air_quality, alerts, marine, persona, profile = await _prepare_chat_context(request)
     reply, source, fallback_used, model = await generate_reply(
         message=request.message,
         weather=weather,
@@ -86,3 +94,40 @@ async def chat(request: ChatRequest) -> ChatResponse:
         agromet=persona.agromet if persona else None,
     )
     return ChatResponse(reply=reply, source=source, fallback_used=fallback_used, model=model)
+
+
+@router.post("/chat/stream")
+@router.post("/stream")
+async def chat_stream(request: ChatRequest) -> StreamingResponse:
+    weather, forecast, air_quality, alerts, marine, persona, profile = await _prepare_chat_context(request)
+
+    async def event_generator():
+        try:
+            async for chunk in stream_reply(
+                message=request.message,
+                weather=weather,
+                forecast=forecast,
+                air_quality=air_quality,
+                interests=request.interests,
+                history=request.history,
+                locale=request.locale or "en",
+                alerts=alerts,
+                marine=marine,
+                persona=persona,
+                profile=profile,
+                agromet=persona.agromet if persona else None,
+            ):
+                yield f"data: {json.dumps(chunk)}\n\n"
+        except Exception as exc:
+            yield f"data: {json.dumps({'token': ' ' + str(exc), 'done': True, 'source': 'fallback', 'model': 'error'})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+

@@ -3,6 +3,7 @@ export type Locale = "en" | "hi";
 export const TRANSLATIONS = {
   en: {
     "nav.home": "Home",
+    "nav.map": "Live Map",
     "nav.explore": "Explore",
     "nav.alerts": "Alerts",
     "nav.assistant": "Assistant",
@@ -325,6 +326,7 @@ export const TRANSLATIONS = {
   },
   hi: {
     "nav.home": "होम",
+    "nav.map": "लाइव मैप",
     "nav.explore": "खोजें",
     "nav.alerts": "चेतावनियाँ",
     "nav.assistant": "सहायक",

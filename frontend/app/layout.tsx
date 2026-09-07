@@ -7,6 +7,7 @@ import { PreferencesProvider } from "@/context/PreferencesContext";
 import { LocationProvider } from "@/context/LocationContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { Navbar } from "@/components/layout/Navbar";
+import { FloatingAIAssistant } from "@/components/ai/FloatingAIAssistant";
 import { LOCALE_COOKIE_KEY, LOCALE_STORAGE_KEY, isLocale, type Locale } from "@/lib/i18n/translations";
 
 const geistSans = Geist({
@@ -45,6 +46,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <LocationProvider>
                 <Navbar />
                 {children}
+                <FloatingAIAssistant />
               </LocationProvider>
             </PreferencesProvider>
           </AuthProvider>
