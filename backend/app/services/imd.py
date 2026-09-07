@@ -468,18 +468,44 @@ async def _load_verified_observation_stations() -> list[dict[str, Any]]:
         if not forecast_rows:
             raise UpstreamAPIError("imd", "IMD station mapping unavailable")
 
+        wx_rows: list[dict[str, Any]] = []
         try:
             wx_payload = await _imd_get("current_wx")
+            wx_rows = _as_list(wx_payload)
         except UpstreamAPIError as exc:
-            logger.warning("[IMD] bulk current_wx catalogue unavailable")
-            raise UpstreamAPIError("imd", "IMD current observation catalogue unavailable") from exc
-        wx_rows = _as_list(wx_payload)
-        if not wx_rows:
-            raise UpstreamAPIError("imd", "IMD current observation catalogue empty")
+            logger.warning("[IMD] bulk current_wx catalogue unavailable (%s); falling back to cityforecastloc catalogue", exc)
 
-        verified = build_verified_observation_stations(forecast_rows, wx_rows)
+        verified = []
+        if wx_rows:
+            verified = build_verified_observation_stations(forecast_rows, wx_rows)
+
+        # Resilience fallback: when IMD's current_wx service is 502/down, build stations directly from cityforecastloc
         if not verified:
-            raise UpstreamAPIError("imd", "No verified IMD observation stations after name join")
+            seen_codes: set[str] = set()
+            for row in forecast_rows:
+                coords = _station_coords(row)
+                name_raw = _pick(row, "Station_Name", "Station", "name", "City")
+                code = _forecast_station_code(row) or _station_id(row)
+                if not coords or not name_raw or not code:
+                    continue
+                sid = str(code).strip()
+                if sid in seen_codes:
+                    continue
+                seen_codes.add(sid)
+                verified.append(
+                    {
+                        "id": sid,
+                        "forecast_code": sid,
+                        "name": str(name_raw).strip(),
+                        "forecast_name": str(name_raw).strip(),
+                        "lat": coords[0],
+                        "lon": coords[1],
+                        "row": row,
+                    }
+                )
+
+        if not verified:
+            raise UpstreamAPIError("imd", "No verified IMD observation stations after mapping")
         logger.info(
             "[IMD] verified observation stations=%d (forecast=%d current_wx=%d)",
             len(verified),
@@ -605,6 +631,80 @@ def _normalize_current(
     )
 
 
+def _normalize_forecast_current(
+    row: dict[str, Any],
+    lat: float,
+    lon: float,
+    name: str | None,
+    station_name: str,
+    *,
+    station_id: str | None = None,
+    station_distance_km: float | None = None,
+) -> WeatherResponse:
+    # Temperature: prioritize Today_Max_temp or Today_Min_temp or explicit temp
+    max_t = _as_float(_pick(row, "Today_Max_temp", "Todays_Forecast_Max_Temp", "max_temp"))
+    min_t = _as_float(_pick(row, "Today_Min_temp", "Todays_Forecast_Min_temp", "min_temp"))
+    temp = max_t if max_t is not None else min_t
+    if temp is None:
+        temp = _as_float(_pick(row, "Temperature", "temperature", "Temp", "CURR_TEMP"))
+    if temp is None:
+        raise UpstreamAPIError("imd", "IMD forecast location observation missing temperature")
+
+    humidity = _as_float(_pick(row, "Relative_Humidity_at_1730", "Relative_Humidity_at_0830", "Humidity", "humidity", "RH"))
+    precip = _as_float(_pick(row, "Past_24_hrs_Rainfall", "Rainfall", "rainfall"))
+    condition_raw = str(_pick(row, "Todays_Forecast", "forecast", "Weather_Condition") or "Cloudy").strip()
+
+    lower_cond = condition_raw.lower()
+    if "thunder" in lower_cond or "squall" in lower_cond:
+        group = "storm"
+    elif "rain" in lower_cond or "drizzle" in lower_cond or "shower" in lower_cond:
+        group = "rain"
+    elif "snow" in lower_cond:
+        group = "snow"
+    elif "fog" in lower_cond or "mist" in lower_cond or "haze" in lower_cond:
+        group = "fog"
+    elif "clear" in lower_cond or "sunny" in lower_cond:
+        group = "clear"
+    else:
+        group = "cloudy"
+
+    obs_name = str(_pick(row, "Station_Name", "Station") or station_name or "").strip() or station_name
+    obs_id = str(_pick(row, "Station_Code", "Station Id") or station_id or "")
+
+    current = CurrentWeather(
+        temperature=temp,
+        feels_like=temp,
+        condition=condition_raw,
+        condition_code=0,
+        condition_group=group,
+        is_day=True,
+        humidity=humidity,
+        wind_speed=None,
+        wind_direction=None,
+        pressure=None,
+        precipitation=precip,
+        uv_index=None,
+        visibility=None,
+        observed_at=_observed_at(row),
+    )
+
+    return WeatherResponse(
+        location=LocationInfo(
+            name=name or "Selected location",
+            lat=lat,
+            lon=lon,
+            timezone="Asia/Kolkata",
+        ),
+        current=current,
+        source="imd",
+        is_demo=False,
+        provider_label="IMD – Official Current Weather",
+        observation_station=obs_name or None,
+        observation_station_id=obs_id or None,
+        station_distance_km=round(station_distance_km, 3) if station_distance_km is not None else None,
+    )
+
+
 async def get_current_weather(lat: float, lon: float, name: str | None = None) -> WeatherResponse:
     if not is_configured():
         raise UpstreamAPIError("imd", "IMD credentials not configured")
@@ -613,28 +713,57 @@ async def get_current_weather(lat: float, lon: float, name: str | None = None) -
 
     async def _fetch() -> WeatherResponse:
         station = await _nearest_verified_station(lat, lon)
-        payload = await _imd_get("current_wx", params={"id": station["id"]})
-        rows = _as_list(payload)
-        if not rows:
-            logger.warning("[IMD] empty current_wx for station id=%s", station["id"])
-            raise UpstreamAPIError("imd", "IMD current weather empty")
 
-        chosen = rows[0]
-        for row in rows:
-            sid = _current_station_id(row) or _station_id(row)
-            if sid and sid == str(station["id"]):
-                chosen = row
-                break
+        # 1. Try real-time observation from current_wx?id=...
+        rows: list[dict[str, Any]] = []
+        try:
+            payload = await _imd_get("current_wx", params={"id": station["id"]})
+            rows = _as_list(payload)
+        except UpstreamAPIError as exc:
+            logger.warning("[IMD] current_wx?id=%s unavailable (%s); trying cityforecastloc", station["id"], exc)
 
-        return _normalize_current(
-            chosen,
-            lat,
-            lon,
-            name,
-            station["name"],
-            station_id=str(station["id"]),
-            station_distance_km=float(station.get("distance_km") or 0.0),
-        )
+        if rows:
+            chosen = rows[0]
+            for row in rows:
+                sid = _current_station_id(row) or _station_id(row)
+                if sid and sid == str(station["id"]):
+                    chosen = row
+                    break
+
+            return _normalize_current(
+                chosen,
+                lat,
+                lon,
+                name,
+                station["name"],
+                station_id=str(station["id"]),
+                station_distance_km=float(station.get("distance_km") or 0.0),
+            )
+
+        # 2. Resilience fallback: use cityforecastloc for station observations when current_wx is down (502)
+        f_rows: list[dict[str, Any]] = []
+        f_code = station.get("forecast_code") or station["id"]
+        try:
+            f_payload = await _imd_get("cityforecastloc", params={"id": f_code})
+            f_rows = _as_list(f_payload)
+        except UpstreamAPIError as exc:
+            logger.warning("[IMD] cityforecastloc?id=%s failed (%s); using cached mapping row", f_code, exc)
+
+        if not f_rows and station.get("row"):
+            f_rows = [station["row"]]
+
+        if f_rows:
+            return _normalize_forecast_current(
+                f_rows[0],
+                lat,
+                lon,
+                name,
+                station["name"],
+                station_id=str(station["id"]),
+                station_distance_km=float(station.get("distance_km") or 0.0),
+            )
+
+        raise UpstreamAPIError("imd", "IMD weather observation unavailable")
 
     try:
         return await _obs_cache.get_or_set(cache_key, _fetch)
