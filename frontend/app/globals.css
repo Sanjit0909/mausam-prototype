@@ -202,6 +202,14 @@ body {
   animation: idle-glow 4s ease-in-out infinite;
 }
 
+/* Mobile Safe Area utilities */
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);
+}
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top, 0px), 0.75rem);
+}
+
 /* Universal respect for user accessibility preferences */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -213,4 +221,5 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
 

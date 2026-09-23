@@ -7,6 +7,7 @@ import { PreferencesProvider } from "@/context/PreferencesContext";
 import { LocationProvider } from "@/context/LocationContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { Navbar } from "@/components/layout/Navbar";
+import { BottomNav } from "@/components/layout/BottomNav";
 import { FloatingAIAssistant } from "@/components/ai/FloatingAIAssistant";
 import { LOCALE_COOKIE_KEY, LOCALE_STORAGE_KEY, isLocale, type Locale } from "@/lib/i18n/translations";
 
@@ -45,8 +46,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <PreferencesProvider>
               <LocationProvider>
                 <Navbar />
-                {children}
+                <main className="flex-1 pb-16 md:pb-0">{children}</main>
                 <FloatingAIAssistant />
+                <BottomNav />
               </LocationProvider>
             </PreferencesProvider>
           </AuthProvider>

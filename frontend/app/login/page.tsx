@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CloudSun, Loader2, Lock, Mail } from "lucide-react";
+import { CloudSun, Loader2, Lock, Mail, Sparkles } from "lucide-react";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { LanguageToggle } from "@/components/common/LanguageToggle";
 import { useAuth } from "@/context/AuthContext";
@@ -109,7 +109,17 @@ function LoginForm() {
             <span className="h-px flex-1 bg-white/10" />
           </div>
 
-          <GoogleAuthButton label={t("auth.login.google")} />
+          <Link
+            href="/demo"
+            className="flex w-full items-center justify-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 py-3 text-sm font-bold text-amber-300 hover:bg-amber-400/20 active:scale-95 transition-all"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>Continue as Guest / Judge Demo</span>
+          </Link>
+
+          <div className="mt-3">
+            <GoogleAuthButton label={t("auth.login.google")} />
+          </div>
 
           <p className="mt-6 text-center text-sm text-mist-400">
             {t("auth.login.noAccount")}{" "}

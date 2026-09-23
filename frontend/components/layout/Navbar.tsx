@@ -84,6 +84,15 @@ export function Navbar() {
                 <Search className="h-3.5 w-3.5 opacity-60" />
               </Link>
 
+              <Link
+                href="/demo"
+                className="flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-400/20 active:scale-95 transition-all"
+                title="SIH 2026 Judge Demo & Persona Comparison Mode"
+              >
+                <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+                <span>Demo Mode</span>
+              </Link>
+
               <LanguageToggle />
 
               <Link

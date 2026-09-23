@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot,
   Check,
@@ -153,6 +153,38 @@ export function FloatingAIAssistant() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const activeInterest = preferences.interests[0] ?? "outdoor_fitness";
+  const dynamicSuggestions = useMemo(() => {
+    if (activeInterest === "agriculture") {
+      return locale === "hi"
+        ? ["क्या आज कीटनाशक छिड़कना ठीक है?", "अगले 3 दिनों में बारिश होगी?", "गेहूं में सिंचाई की जरूरत है?"]
+        : ["Is it safe to spray pesticides today?", "Will it rain in next 3 days?", "Does my wheat crop need irrigation?"];
+    }
+    if (activeInterest === "commuting") {
+      return locale === "hi"
+        ? ["क्या आज फ्लाईओवरों पर जलभराव का खतरा है?", "8:30 बजे दृश्यता कैसी रहेगी?", "क्या आज मेट्रो लेना चाहिए?"]
+        : ["Is there waterlogging risk on flyovers today?", "What is road visibility during 8:30 AM rush?", "Should I take the metro?"];
+    }
+    if (activeInterest === "health") {
+      return locale === "hi"
+        ? ["क्या आज अस्थमा के मरीजों के लिए बाहर जाना ठीक है?", "वायु गुणवत्ता का मुख्य प्रदूषक क्या है?", "क्या N95 मास्क पहनना चाहिए?"]
+        : ["Is air quality safe for asthmatics today?", "What is the peak PM2.5 hour?", "Do I need an N95 mask?"];
+    }
+    if (activeInterest === "marine_beach") {
+      return locale === "hi"
+        ? ["आज अगला उच्च ज्वार कब है?", "क्या समुद्र में तैरना सुरक्षित है?", "क्या मछुआरों के लिए चेतावनी जारी है?"]
+        : ["When is the next high tide?", "Is it safe for beach swimming?", "Are fisherman warnings active?"];
+    }
+    if (activeInterest === "events") {
+      return locale === "hi"
+        ? ["क्या आज शाम बारिश से कार्यक्रम प्रभावित होगा?", "क्या टेंट के लिए हवा की गति सुरक्षित है?", "शाम का तापमान कैसा रहेगा?"]
+        : ["Will rain affect outdoor events today?", "Are wind gusts safe for canopies?", "What is evening comfort index?"];
+    }
+    return locale === "hi"
+      ? ["आज दौड़ने का सर्वोत्तम समय क्या है?", "क्या गर्मी और उमस बहुत अधिक है?", "क्या अगले 3 घंटे में बारिश होगी?"]
+      : ["What is the best time to run today?", "Is heat and humidity elevated?", "Any rain expected in next 3 hours?"];
+  }, [activeInterest, locale]);
 
   // Initialize welcome message once
   useEffect(() => {
@@ -398,7 +430,7 @@ export function FloatingAIAssistant() {
 
           {/* Quick Suggestion Chips */}
           <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-2 border-b border-white/5 bg-navy-900/40 no-scrollbar">
-            {QUICK_SUGGESTIONS.map((chip, i) => (
+            {dynamicSuggestions.map((chip: string, i: number) => (
               <button
                 key={i}
                 onClick={() => handleSend(chip)}

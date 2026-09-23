@@ -10,7 +10,7 @@ create table if not exists public.preferences (
   notification_prefs jsonb default '{"alerts": true, "daily_summary": false}'::jsonb,
   units text default 'metric',
   persona_profile jsonb default null,
-  updated_at timestamptz default now()
+  updated_at timestamptz default now() 
 );
 
 alter table public.preferences enable row level security;

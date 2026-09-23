@@ -13,37 +13,66 @@ export function AlertBanner({ alerts }: { alerts: WeatherAlert[] }) {
   const top = [...alerts].sort((a, b) => severityRank(b.severity) - severityRank(a.severity))[0];
   const extra = alerts.length - 1;
   const title = localizeAlertTitle(top.title, locale);
-  const isHighSeverity = top.severity === "severe" || top.severity === "extreme";
+  const isExtreme = top.severity === "extreme";
+  const isSevere = top.severity === "severe";
+  const isModerate = top.severity === "moderate";
+
+  // Color schemes according to official IMD 4-tier warning system: Red, Orange, Yellow, Green
+  const colorClasses = isExtreme || isSevere
+    ? "border-rose-500/60 bg-rose-500/10 text-rose-200 shadow-[0_0_25px_rgba(244,63,94,0.15)]"
+    : isModerate
+    ? "border-amber-500/50 bg-amber-500/10 text-amber-200"
+    : "border-yellow-500/40 bg-yellow-500/10 text-yellow-200";
+
+  const badgeColor = isExtreme || isSevere
+    ? "bg-rose-500 text-white"
+    : isModerate
+    ? "bg-amber-500 text-navy-950 font-bold"
+    : "bg-yellow-400 text-navy-950 font-bold";
 
   return (
-    <Link
-      href="/alerts"
-      className={`glass group flex items-center gap-3 rounded-2xl border px-5 py-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${
-        isHighSeverity
-          ? "border-rose-500/40 bg-rose-500/[0.08] animate-severe-breath"
-          : "border-amber-500/30 bg-amber-500/[0.06] hover:border-amber-400/40"
-      }`}
-    >
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-500/10 shrink-0 transition-transform group-hover:scale-105">
-        <TriangleAlert className="h-5 w-5 text-rose-400" />
+    <div className="space-y-1" role="alert" aria-live="assertive">
+      <div className="flex items-center justify-between px-1">
+        <span className="text-[11px] font-semibold tracking-wider uppercase text-rose-400 flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-rose-500 animate-ping" />
+          {locale === "hi" ? "आधिकारिक आईएमडी मौसम चेतावनी" : "OFFICIAL IMD WEATHER WARNING"}
+        </span>
+        <span className="text-[10px] text-mist-400">
+          {locale === "hi" ? "प्राथमिक सुरक्षा अलर्ट" : "Priority Safety Anchor"}
+        </span>
       </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="rounded bg-rose-500/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-rose-300 border border-rose-500/30">
-            {top.severity}
-          </span>
-          <p className="truncate text-sm font-semibold text-mist-100">{title}</p>
+
+      <Link
+        href="/alerts"
+        className={`group flex items-center gap-3 rounded-2xl border px-4 py-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${colorClasses}`}
+      >
+        <div className={`flex h-10 w-10 items-center justify-center rounded-xl shrink-0 transition-transform group-hover:scale-105 ${
+          isExtreme || isSevere ? "bg-rose-500/20 text-rose-300" : "bg-amber-500/20 text-amber-300"
+        }`}>
+          <TriangleAlert className="h-5 w-5" />
         </div>
-        <p className="truncate text-xs text-mist-400 mt-0.5">
-          {extra > 0
-            ? extra === 1
-              ? t("alerts.moreOne", { count: extra })
-              : t("alerts.moreMany", { count: extra })
-            : t("alerts.tapDetails")}
-        </p>
-      </div>
-      <ChevronRight className="h-4 w-4 shrink-0 text-mist-400 transition-transform group-hover:translate-x-0.5" />
-    </Link>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${badgeColor}`}>
+              {top.severity === "extreme"
+                ? locale === "hi" ? "लाल अलर्ट (रेड)" : "RED ALERT"
+                : top.severity === "severe"
+                ? locale === "hi" ? "नारंगी अलर्ट (ऑरेंज)" : "ORANGE ALERT"
+                : locale === "hi" ? "पीला अलर्ट (येलो)" : "YELLOW ALERT"}
+            </span>
+            <p className="truncate text-sm font-bold text-white">{title}</p>
+          </div>
+          <p className="truncate text-xs text-mist-300 mt-1">
+            {top.description || (extra > 0
+              ? extra === 1
+                ? t("alerts.moreOne", { count: extra })
+                : t("alerts.moreMany", { count: extra })
+              : t("alerts.tapDetails"))}
+          </p>
+        </div>
+        <ChevronRight className="h-4 w-4 shrink-0 text-mist-400 transition-transform group-hover:translate-x-0.5" />
+      </Link>
+    </div>
   );
 }
 

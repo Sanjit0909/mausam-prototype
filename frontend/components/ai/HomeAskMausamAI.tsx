@@ -16,9 +16,13 @@ const SUGGESTIONS: Record<PersonaId | "default", TranslationKey[]> = {
   farmer: ["home.ai.suggest.farmer1", "home.ai.suggest.farmer2", "home.ai.suggest.farmer3"],
   runner: ["home.ai.suggest.runner1", "home.ai.suggest.runner2", "home.ai.suggest.runner3"],
   traveller: ["home.ai.suggest.traveller1", "home.ai.suggest.traveller2", "home.ai.suggest.traveller3"],
+  traveler: ["home.ai.suggest.traveller1", "home.ai.suggest.traveller2", "home.ai.suggest.traveller3"],
+  commuter: ["assistant.suggest.rain", "assistant.suggest.travel", "assistant.suggest.event"],
   marine: ["home.ai.suggest.marine1", "home.ai.suggest.marine2", "home.ai.suggest.marine3"],
   family: ["assistant.suggest.rain", "assistant.suggest.travel", "assistant.suggest.event"],
+  health: ["assistant.suggest.rain", "assistant.suggest.run", "assistant.suggest.event"],
   health_vulnerable: ["assistant.suggest.rain", "assistant.suggest.run", "assistant.suggest.event"],
+  event_planner: ["assistant.suggest.event", "assistant.suggest.rain", "assistant.suggest.travel"],
   disaster: ["assistant.suggest.rain", "assistant.suggest.travel", "assistant.suggest.event"],
   default: ["assistant.suggest.run", "assistant.suggest.rain", "assistant.suggest.travel"],
 };

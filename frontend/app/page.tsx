@@ -36,7 +36,7 @@ const FEATURES: { icon: typeof Sparkles; titleKey: TranslationKey; descKey: Tran
 ];
 
 export default function LandingPage() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
 
   return (
     <div className="min-h-screen">
@@ -77,10 +77,18 @@ export default function LandingPage() {
         <p className="mx-auto mt-5 max-w-2xl text-base text-mist-300 md:text-lg">{t("landing.subtitle")}</p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
+            href="/demo"
+            className="flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-6 py-3 text-sm font-bold text-navy-950 hover:from-amber-300 hover:to-amber-400 transition-all shadow-lg shadow-amber-500/20 active:scale-95"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>{locale === "hi" ? "मौसम डेमो एक्सप्लोर करें" : "Explore MAUSAM (Guest Demo)"}</span>
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link
             href="/signup"
             className="flex items-center gap-2 rounded-full bg-sky-500 px-6 py-3 text-sm font-semibold text-navy-950 hover:bg-sky-400 transition-colors"
           >
-            {t("landing.ctaPrimary")} <ArrowRight className="h-4 w-4" />
+            {t("landing.ctaPrimary")}
           </Link>
           <Link
             href="/login"

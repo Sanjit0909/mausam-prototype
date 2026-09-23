@@ -39,14 +39,18 @@ export default function HomePage() {
     );
 
   useEffect(() => {
-    if (!authLoading && !user) router.replace("/login");
+    const isGuestDemo = typeof window !== "undefined" && localStorage.getItem("mausam:guest_demo") === "true";
+    if (!authLoading && !user && !isGuestDemo) router.replace("/login");
   }, [authLoading, user, router]);
 
   useEffect(() => {
-    if (!prefsLoading && user && !hasOnboarded) router.replace("/onboarding");
+    const isGuestDemo = typeof window !== "undefined" && localStorage.getItem("mausam:guest_demo") === "true";
+    if (!prefsLoading && user && !hasOnboarded && !isGuestDemo) router.replace("/onboarding");
   }, [prefsLoading, hasOnboarded, user, router]);
 
-  if (authLoading || (prefsLoading && !preferences.interests.length)) {
+  const isGuest = typeof window !== "undefined" && localStorage.getItem("mausam:guest_demo") === "true";
+
+  if (authLoading || (prefsLoading && !preferences.interests.length && !isGuest)) {
     return (
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 md:px-8">
         <HeroSkeleton />

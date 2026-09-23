@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import { Droplets, Eye, Gauge, Wind } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { Droplets, Eye, Gauge, Wind, RotateCcw, Pin } from "lucide-react";
 import { WeatherHero } from "@/components/weather/WeatherHero";
 import { WeatherMetricCard } from "@/components/weather/WeatherMetricCard";
 import { HourlyForecast } from "@/components/weather/HourlyForecast";
@@ -21,6 +21,16 @@ import { useLanguage } from "@/context/LanguageContext";
 import { getPersonaConfig, type HomeSectionId, type PersonaId } from "@/lib/personalization/personaConfig";
 import { localizePersonaCardText } from "@/lib/i18n/localizePersona";
 import { formatPercent, formatPressure, formatVisibility, formatWind, windDirectionLabel } from "@/lib/utils/format";
+import {
+  rankCardIds,
+  loadPinnedCards,
+  savePinnedCards,
+  loadHiddenCards,
+  saveHiddenCards,
+  type PersonaId as RankingPersonaId,
+  type WeatherScoringContext,
+} from "@/lib/personalization/rankingEngine";
+import { synthesizeCardsForPersona } from "@/lib/personalization/personaCardSynthesizer";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import type {
   AirQualityResponse,
@@ -37,44 +47,13 @@ import type {
 const METRIC_CARD_KEYS = ["humidity", "wind", "pressure", "visibility", "rain_probability", "uv_index", "aqi"] as const;
 
 /** Metric keys already covered by large persona cards — omit from compact metrics grid. */
-const SPECIALTY_METRIC_OMIT: Partial<Record<PersonaId, string[]>> = {
+const SPECIALTY_METRIC_OMIT: Record<string, string[]> = {
   farmer: ["rain_probability", "humidity"],
   runner: ["aqi", "uv_index", "humidity", "rain_probability", "wind"],
+  commuter: ["visibility", "rain_probability"],
+  traveler: ["visibility", "rain_probability", "wind"],
   traveller: ["visibility", "rain_probability", "wind"],
 };
-
-const PERSONA_CARD_SECTIONS = new Set<HomeSectionId>([
-  "crop_stage",
-  "agromet_advisory",
-  "irrigation",
-  "soil_moisture",
-  "crop_risk",
-  "farm_forecast",
-  "best_run_time",
-  "heat_humidity",
-  "aqi",
-  "uv",
-  "rain",
-  "wind",
-  "hydration",
-  "hourly_run",
-  "travel_risk",
-  "visibility",
-  "temperature",
-  "hourly_travel",
-  "packing",
-]);
-
-function cardsForSection(section: HomeSectionId, cards: PersonaCard[]): PersonaCard[] {
-  if (section === "crop_risk") return cards.filter((c) => c.id.startsWith("crop_risk"));
-  if (section === "aqi") return cards.filter((c) => c.id === "aqi");
-  if (section === "uv") return cards.filter((c) => c.id === "uv");
-  if (section === "rain") return cards.filter((c) => c.id === "rain");
-  if (section === "wind") return cards.filter((c) => c.id === "wind");
-  if (section === "visibility") return cards.filter((c) => c.id === "visibility");
-  if (section === "temperature") return cards.filter((c) => c.id === "temperature");
-  return cards.filter((c) => c.id === section);
-}
 
 export interface PersonaHomeDashboardProps {
   personaId: PersonaId;
@@ -100,14 +79,109 @@ export function PersonaHomeDashboard({
   persona,
 }: PersonaHomeDashboardProps) {
   const { t, locale } = useLanguage();
+  const normalizedPersonaId = (
+    personaId === "traveller" ? "traveler" : personaId === "health_vulnerable" ? "health" : personaId
+  ) as RankingPersonaId;
+
   const personaConfig = getPersonaConfig(personaId);
-  const reasons = insights?.card_reasons ?? {};
-  const personaCards = persona?.cards ?? [];
-  const sectionOrder = (persona?.section_order as HomeSectionId[] | undefined) ?? personaConfig.sectionOrder;
   const current = weather.current;
 
+  // Pin & Hide state management with localStorage persistence
+  const [pinnedCardIds, setPinnedCardIds] = useState<Set<string>>(() =>
+    loadPinnedCards(normalizedPersonaId)
+  );
+  const [hiddenCardIds, setHiddenCardIds] = useState<Set<string>>(() =>
+    loadHiddenCards(normalizedPersonaId)
+  );
+
+  // Sync state if persona changes
+  useEffect(() => {
+    setPinnedCardIds(loadPinnedCards(normalizedPersonaId));
+    setHiddenCardIds(loadHiddenCards(normalizedPersonaId));
+  }, [normalizedPersonaId]);
+
+  const handleTogglePin = (cardId: string) => {
+    setPinnedCardIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(cardId)) {
+        next.delete(cardId);
+      } else {
+        next.add(cardId);
+      }
+      savePinnedCards(normalizedPersonaId, next);
+      return next;
+    });
+    trackCardInteraction(cardId);
+  };
+
+  const handleHideCard = (cardId: string) => {
+    setHiddenCardIds((prev) => {
+      const next = new Set(prev);
+      next.add(cardId);
+      saveHiddenCards(normalizedPersonaId, next);
+      return next;
+    });
+    trackCardInteraction(cardId);
+  };
+
+  const handleRestoreHiddenCards = () => {
+    setHiddenCardIds(new Set());
+    saveHiddenCards(normalizedPersonaId, new Set());
+  };
+
+  // Combine backend cards with synthesized fallback cards to ensure all 8 personas have rich content
+  const allCards = useMemo(() => {
+    const backendCards = persona?.cards ?? [];
+    const synthesized = synthesizeCardsForPersona(
+      normalizedPersonaId,
+      weather,
+      forecast,
+      airQuality,
+      alerts
+    );
+
+    // Merge: backend cards win if ID matches, else add synthesized
+    const cardMap = new Map<string, PersonaCard>();
+    for (const c of synthesized) cardMap.set(c.id, c);
+    for (const c of backendCards) cardMap.set(c.id, c);
+
+    return Array.from(cardMap.values());
+  }, [persona?.cards, normalizedPersonaId, weather, forecast, airQuality, alerts]);
+
+  // Scoring context for deterministic ranking
+  const scoringContext: WeatherScoringContext = useMemo(
+    () => ({
+      temperature: current.temperature,
+      feelsLike: current.feels_like,
+      humidity: current.humidity ?? undefined,
+      windSpeed: current.wind_speed ?? undefined,
+      rainProbability:
+        forecast?.hourly?.[0]?.precipitation_probability ??
+        (current.precipitation && current.precipitation > 0 ? 80 : 10),
+      visibilityKm: current.visibility ?? undefined,
+      uvIndex: current.uv_index ?? 5,
+      aqi: airQuality?.us_aqi ?? 85,
+      isCoastal: Boolean(marine?.available),
+      currentHourIST: new Date().getHours(),
+    }),
+    [current, forecast, airQuality, marine]
+  );
+
+  // Compute deterministic ranking and score breakdowns
+  const { orderedIds, scoreMap } = useMemo(() => {
+    const cardIds = allCards.map((c) => c.id);
+    return rankCardIds(cardIds, normalizedPersonaId, scoringContext, pinnedCardIds, hiddenCardIds);
+  }, [allCards, normalizedPersonaId, scoringContext, pinnedCardIds, hiddenCardIds]);
+
+  // Map of cardId -> PersonaCard
+  const cardLookup = useMemo(() => {
+    const map = new Map<string, PersonaCard>();
+    for (const c of allCards) map.set(c.id, c);
+    return map;
+  }, [allCards]);
+
   const orderedMetricKeys = useMemo(() => {
-    const omit = new Set(SPECIALTY_METRIC_OMIT[personaId] ?? []);
+    const omit = new Set(SPECIALTY_METRIC_OMIT[normalizedPersonaId] ?? []);
     const priority = persona?.metric_priority?.length
       ? persona.metric_priority
       : personaConfig.metricPriority;
@@ -115,7 +189,7 @@ export function PersonaHomeDashboard({
     const known = METRIC_CARD_KEYS.filter((k) => order.includes(k) && !omit.has(k));
     const rest = METRIC_CARD_KEYS.filter((k) => !known.includes(k) && !omit.has(k));
     return [...new Set([...known, ...rest])];
-  }, [insights, persona, personaConfig.metricPriority, personaId]);
+  }, [insights, persona, personaConfig.metricPriority, normalizedPersonaId]);
 
   const heroTitle = localizePersonaCardText(
     persona?.hero_title || t(personaConfig.heroTitleKey as TranslationKey),
@@ -128,129 +202,147 @@ export function PersonaHomeDashboard({
       <WeatherMetricCard
         icon={Droplets}
         label={t("home.humidity")}
-        value={formatPercent(current.humidity)}
-        accentClassName="text-sky-400"
-        reason={reasons.humidity}
-        onActivate={() => trackCardInteraction("humidity")}
+        value={formatPercent(current.humidity ?? 0)}
       />
     ),
     wind: (
       <WeatherMetricCard
         icon={Wind}
         label={t("home.wind")}
-        value={formatWind(current.wind_speed)}
-        sublabel={windDirectionLabel(current.wind_direction, locale)}
-        accentClassName="text-sky-400"
-        reason={reasons.wind}
+        value={formatWind(current.wind_speed ?? 0)}
         windDeg={current.wind_direction}
-        onActivate={() => trackCardInteraction("wind")}
+        sublabel={
+          current.wind_direction != null
+            ? `${windDirectionLabel(current.wind_direction)} (${current.wind_direction}°)`
+            : undefined
+        }
       />
     ),
     pressure: (
       <WeatherMetricCard
         icon={Gauge}
         label={t("home.pressure")}
-        value={formatPressure(current.pressure)}
-        accentClassName="text-mist-300"
-        reason={reasons.pressure}
-        onActivate={() => trackCardInteraction("pressure")}
+        value={formatPressure(current.pressure ?? 1013)}
       />
     ),
     visibility: (
       <WeatherMetricCard
         icon={Eye}
         label={t("home.visibility")}
-        value={formatVisibility(current.visibility)}
-        accentClassName="text-mist-300"
-        reason={reasons.visibility}
-        onActivate={() => trackCardInteraction("visibility")}
+        value={formatVisibility(current.visibility ?? 10)}
       />
     ),
     rain_probability: (
       <WeatherMetricCard
         icon={Droplets}
-        label={t("home.rainChance")}
-        value={formatPercent(forecast?.daily[0]?.precipitation_probability_max)}
-        sublabel={t("home.rainToday")}
-        accentClassName="text-sky-400"
-        reason={reasons.rain_probability}
-        onActivate={() => trackCardInteraction("rain_probability")}
+        label={locale === "hi" ? "वर्षा संभावना" : "Rain Probability"}
+        value={formatPercent(
+          forecast?.hourly?.[0]?.precipitation_probability ??
+            (current.precipitation ? 80 : 0)
+        )}
       />
     ),
-    uv_index: (
-      <UVCard
-        uvIndex={current.uv_index}
-        reason={reasons.uv_index}
-        onActivate={() => trackCardInteraction("uv_index")}
-      />
-    ),
-    aqi: airQuality ? (
-      <AQICard data={airQuality} reason={reasons.aqi} onActivate={() => trackCardInteraction("aqi")} />
-    ) : (
-      <WeatherMetricCard
-        icon={Wind}
-        label={t("home.aqi")}
-        value="--"
-        sublabel={t("home.aqiUnavailable")}
-        reason={reasons.aqi}
-        onActivate={() => trackCardInteraction("aqi")}
-      />
-    ),
+    uv_index: current.uv_index != null ? <UVCard uvIndex={current.uv_index} /> : null,
+    aqi: airQuality ? <AQICard data={airQuality} /> : null,
   };
 
-  const renderSection = (section: HomeSectionId, key: string) => {
-    if (PERSONA_CARD_SECTIONS.has(section)) {
-      const sectionCards = cardsForSection(section, personaCards);
-      if (sectionCards.length === 0) return null;
-      if (section === "crop_risk") {
-        return (
-          <div key={key} className="space-y-3">
-            <h2 className="text-sm font-semibold text-mist-200">{t("persona.section.cropRisk")}</h2>
-            <div className="space-y-3">
-              {sectionCards.map((card) => (
-                <ExpandablePersonaCard key={card.id} card={card} />
-              ))}
-            </div>
-          </div>
-        );
-      }
-      return (
-        <div key={key} className="space-y-3">
-          {sectionCards.map((card) => (
-            <ExpandablePersonaCard key={card.id} card={card} />
-          ))}
-        </div>
-      );
-    }
+  const hasActiveAlerts = alerts && alerts.alerts.length > 0;
 
-    switch (section) {
-      case "alerts":
-        return alerts && alerts.alerts.length > 0 ? <AlertBanner key={key} alerts={alerts.alerts} /> : null;
-      case "hero":
-        return <WeatherHero key={key} weather={weather} title={heroTitle} subtitle={heroSubtitle} />;
-      case "insights":
-        return insights && insights.insights.length > 0 ? (
-          <div key={key} className="space-y-3">
+  return (
+    <div key={personaId} className="space-y-6 animate-in fade-in duration-300">
+      {/* PHASE 5: Official IMD Alert Override — Always Anchored at the Absolute Top */}
+      {hasActiveAlerts && (
+        <Reveal delay={0}>
+          <AlertBanner alerts={alerts.alerts} />
+        </Reveal>
+      )}
+
+      {/* Hero Weather Cockpit */}
+      <Reveal delay={50}>
+        <WeatherHero weather={weather} title={heroTitle} subtitle={heroSubtitle} />
+      </Reveal>
+
+      {/* Restore Hidden Cards banner if user previously hid any card */}
+      {hiddenCardIds.size > 0 && (
+        <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-2 text-xs text-mist-300">
+          <span>
+            {locale === "hi"
+              ? `${hiddenCardIds.size} कार्ड छिपाए गए हैं`
+              : `${hiddenCardIds.size} personalized cards hidden`}
+          </span>
+          <button
+            onClick={handleRestoreHiddenCards}
+            className="flex items-center gap-1 text-sky-400 hover:text-sky-300 font-semibold"
+          >
+            <RotateCcw className="h-3 w-3" />
+            <span>{locale === "hi" ? "सभी पुनर्स्थापित करें" : "Restore all"}</span>
+          </button>
+        </div>
+      )}
+
+      {/* PHASE 4 & 8: Dynamically Ranked Specialty Persona Cards */}
+      {orderedIds.length > 0 && (
+        <section aria-label="Personalized Weather Intelligence" className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-sm font-semibold tracking-wide uppercase text-sky-400">
+              {locale === "hi" ? "प्राथमिकता-आधारित इंटेलिजेंस" : "Ranked Personal Intelligence"}
+            </h2>
+            <span className="text-[11px] text-mist-400">
+              {locale === "hi" ? "मल्टी-फैक्टर स्कोरिंग द्वारा व्यवस्थित" : "Multi-factor Deterministic Order"}
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {orderedIds.map((cardId, idx) => {
+              const card = cardLookup.get(cardId);
+              if (!card) return null;
+              const breakdown = scoreMap[cardId];
+              return (
+                <Reveal key={cardId} delay={Math.min(idx * 50, 250)}>
+                  <ExpandablePersonaCard
+                    card={card}
+                    scoreBreakdown={breakdown}
+                    onTogglePin={handleTogglePin}
+                    onHideCard={handleHideCard}
+                  />
+                </Reveal>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Personalized Insights */}
+      {insights && insights.insights.length > 0 && (
+        <Reveal delay={100}>
+          <div className="space-y-3">
             {insights.insights.slice(0, 2).map((insight, i) => (
               <PersonalizedInsight key={i} insight={insight} />
             ))}
           </div>
-        ) : null;
-      case "metrics":
-        if (orderedMetricKeys.length === 0) return null;
-        return (
-          <div key={key}>
-            <h2 className="mb-3 text-sm font-semibold text-mist-200">{t("persona.section.moreMetrics")}</h2>
+        </Reveal>
+      )}
+
+      {/* Compact Secondary Metrics Grid */}
+      {orderedMetricKeys.length > 0 && (
+        <Reveal delay={150}>
+          <div>
+            <h2 className="mb-3 text-sm font-semibold text-mist-200">
+              {t("persona.section.moreMetrics")}
+            </h2>
             <StaggerContainer className="grid grid-cols-2 gap-4 md:grid-cols-4" staggerMs={50}>
               {orderedMetricKeys.map((metricKey) => (
                 <div key={metricKey}>{metricRenderers[metricKey]}</div>
               ))}
             </StaggerContainer>
           </div>
-        );
-      case "recommendations":
-        return insights && insights.recommendations.length > 0 ? (
-          <div key={key}>
+        </Reveal>
+      )}
+
+      {/* AI Recommendations */}
+      {insights && insights.recommendations.length > 0 && (
+        <Reveal delay={200}>
+          <div>
             <h2 className="mb-3 text-sm font-semibold text-mist-200">
               {t(personaConfig.terminology.recommendations as TranslationKey)}
             </h2>
@@ -260,55 +352,60 @@ export function PersonaHomeDashboard({
               ))}
             </StaggerContainer>
           </div>
-        ) : null;
-      case "charts":
-        return forecast ? (
-          <div key={key} className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        </Reveal>
+      )}
+
+      {/* Forecast Trend Charts */}
+      {forecast && (
+        <Reveal delay={250}>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div className="glass rounded-3xl p-6">
               <h3 className="mb-2 text-sm font-semibold text-mist-200">
-                {personaId === "farmer" ? t("persona.charts.farmTemp") : t("home.tempTrend")}
+                {normalizedPersonaId === "farmer" ? t("persona.charts.farmTemp") : t("home.tempTrend")}
               </h3>
               <WeatherChart hourly={forecast.hourly} variant="temperature" />
             </div>
             <div className="glass rounded-3xl p-6">
               <h3 className="mb-2 text-sm font-semibold text-mist-200">
-                {personaId === "farmer" ? t("persona.charts.farmRain") : t("home.rainProb")}
+                {normalizedPersonaId === "farmer" ? t("persona.charts.farmRain") : t("home.rainProb")}
               </h3>
               <WeatherChart hourly={forecast.hourly} variant="rain" />
             </div>
           </div>
-        ) : null;
-      case "hourly":
-        return forecast ? <HourlyForecast key={key} hourly={forecast.hourly} /> : null;
-      case "daily":
-        return forecast ? (
-          <div key={key}>
-            {personaId === "farmer" && (
+        </Reveal>
+      )}
+
+      {/* Hourly Forecast */}
+      {forecast && (
+        <Reveal delay={300}>
+          <HourlyForecast hourly={forecast.hourly} />
+        </Reveal>
+      )}
+
+      {/* Multi-day Forecast */}
+      {forecast && (
+        <Reveal delay={350}>
+          <div>
+            {normalizedPersonaId === "farmer" && (
               <h2 className="mb-3 text-sm font-semibold text-mist-200">{t("persona.term.dailyOutlook")}</h2>
             )}
             <DailyForecast daily={forecast.daily} />
           </div>
-        ) : null;
-      case "astronomy":
-        return astronomy ? <SunMoonCard key={key} data={astronomy} /> : null;
-      case "marine":
-        return marine && marine.available ? <MarineCard key={key} data={marine} /> : null;
-      default:
-        return null;
-    }
-  };
+        </Reveal>
+      )}
 
-  return (
-    <div key={personaId} className="space-y-6 animate-in fade-in duration-300">
-      {sectionOrder.map((section, idx) => {
-        const rendered = renderSection(section, `${section}-${idx}`);
-        if (!rendered) return null;
-        return (
-          <Reveal key={`${personaId}-${section}-${idx}`} delay={Math.min(idx * 40, 200)}>
-            {rendered}
-          </Reveal>
-        );
-      })}
+      {/* Astronomy & Marine */}
+      {astronomy && (
+        <Reveal delay={400}>
+          <SunMoonCard data={astronomy} />
+        </Reveal>
+      )}
+
+      {marine && marine.available && (
+        <Reveal delay={450}>
+          <MarineCard data={marine} />
+        </Reveal>
+      )}
     </div>
   );
 }
