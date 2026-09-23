@@ -337,15 +337,9 @@ export function FloatingAIAssistant() {
 
   return (
     <>
-      {/* Floating Action Button strictly at bottom-4 left-4 */}
+      {/* Floating Action Button - elevated just above mobile bottom navigation bar */}
       <div
-        className="fixed z-50 bottom-4 left-4"
-        style={{
-          position: "fixed",
-          bottom: "1.5rem",
-          left: "1.5rem",
-          zIndex: 50,
-        }}
+        className="fixed z-50 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] md:bottom-6 left-4 md:left-6"
       >
         <div className="relative group">
           <button
@@ -379,16 +373,10 @@ export function FloatingAIAssistant() {
         </div>
       </div>
 
-      {/* Compact Popover Window: 380px wide, max 560px height */}
+      {/* Compact Popover Window: 380px wide, max 540px height */}
       {isOpen && (
         <div
-          className="fixed z-50 bottom-20 left-4 w-[380px] max-w-[calc(100vw-2rem)] h-[540px] max-h-[calc(100vh-6.5rem)] flex flex-col rounded-2xl border border-white/10 bg-navy-950/95 backdrop-blur-2xl shadow-2xl shadow-navy-950/80 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-          style={{
-            position: "fixed",
-            bottom: "5rem",
-            left: "1.5rem",
-            zIndex: 50,
-          }}
+          className="fixed z-50 bottom-[calc(9rem+env(safe-area-inset-bottom,0px))] md:bottom-24 left-4 md:left-6 w-[380px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-10.5rem-env(safe-area-inset-bottom,0px))] flex flex-col rounded-2xl border border-white/10 bg-navy-950/95 backdrop-blur-2xl shadow-2xl shadow-navy-950/80 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.03] px-4 py-3">
