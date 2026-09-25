@@ -96,33 +96,33 @@ export default function SignupPage() {
         </Link>
 
         <div className="glass rounded-3xl p-8">
-          <h1 className="text-xl font-semibold text-mist-100">{t("auth.signup.title")}</h1>
-          <p className="mt-1 text-sm text-mist-400">{t("auth.signup.subtitle")}</p>
+          <h1 className="text-xl font-bold text-white">{t("auth.signup.title")}</h1>
+          <p className="mt-1 text-sm text-white/85 dark:text-neutral-400 font-normal">{t("auth.signup.subtitle")}</p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div className="relative">
-              <User className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-mist-400" />
+              <User className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70 dark:text-neutral-400" />
               <input
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t("auth.fullName")}
-                className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-3 pl-11 pr-4 text-sm text-mist-100 placeholder:text-mist-400 outline-none focus:border-sky-400/50"
+                className="w-full rounded-2xl border border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/[0.04] py-3 pl-11 pr-4 text-sm text-white placeholder:text-white/60 dark:placeholder:text-neutral-500 outline-none focus:border-sky-400/80 focus:ring-2 focus:ring-sky-400/20 transition-all"
               />
             </div>
             <div className="relative">
-              <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-mist-400" />
+              <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70 dark:text-neutral-400" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t("auth.email")}
-                className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-3 pl-11 pr-4 text-sm text-mist-100 placeholder:text-mist-400 outline-none focus:border-sky-400/50"
+                className="w-full rounded-2xl border border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/[0.04] py-3 pl-11 pr-4 text-sm text-white placeholder:text-white/60 dark:placeholder:text-neutral-500 outline-none focus:border-sky-400/80 focus:ring-2 focus:ring-sky-400/20 transition-all"
               />
             </div>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-mist-400" />
+              <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70 dark:text-neutral-400" />
               <input
                 type="password"
                 required
@@ -130,33 +130,33 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t("auth.passwordHint")}
-                className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-3 pl-11 pr-4 text-sm text-mist-100 placeholder:text-mist-400 outline-none focus:border-sky-400/50"
+                className="w-full rounded-2xl border border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/[0.04] py-3 pl-11 pr-4 text-sm text-white placeholder:text-white/60 dark:placeholder:text-neutral-500 outline-none focus:border-sky-400/80 focus:ring-2 focus:ring-sky-400/20 transition-all"
               />
             </div>
 
-            {error && <p className="text-sm text-rose-400">{error}</p>}
+            {error && <p className="text-sm font-semibold text-rose-300 dark:text-rose-400">{error}</p>}
 
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-sky-500 py-3 text-sm font-semibold text-navy-950 hover:bg-sky-400 transition-colors disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-sky-500 py-3 text-sm font-semibold text-navy-950 hover:bg-sky-400 transition-colors shadow-md disabled:opacity-60"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {t("auth.signup.submit")}
             </button>
           </form>
 
-          <div className="my-5 flex items-center gap-3 text-[11px] uppercase tracking-wide text-mist-500">
-            <span className="h-px flex-1 bg-white/10" />
+          <div className="my-5 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wider text-white/70 dark:text-neutral-400">
+            <span className="h-px flex-1 bg-white/15 dark:bg-white/10" />
             {t("auth.or")}
-            <span className="h-px flex-1 bg-white/10" />
+            <span className="h-px flex-1 bg-white/15 dark:bg-white/10" />
           </div>
 
           <GoogleAuthButton label={t("auth.signup.google")} />
 
-          <p className="mt-6 text-center text-sm text-mist-400">
+          <p className="mt-6 text-center text-sm text-white/80 dark:text-neutral-400">
             {t("auth.signup.hasAccount")}{" "}
-            <Link href="/login" className="font-medium text-sky-400 hover:text-sky-300">
+            <Link href="/login" className="font-semibold text-sky-200 dark:text-sky-400 hover:text-white underline underline-offset-2">
               {t("auth.signup.logInLink")}
             </Link>
           </p>

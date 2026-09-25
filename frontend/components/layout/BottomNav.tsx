@@ -50,7 +50,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Mobile Navigation"
-      className="fixed bottom-0 inset-x-0 z-50 md:hidden bg-navy-950/95 backdrop-blur-2xl border-t border-slate-700/60 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] pb-safe"
+      className="fixed bottom-0 inset-x-0 z-50 md:hidden bg-[rgba(25,75,105,0.52)] backdrop-blur-2xl border-t border-white/20 shadow-[0_-8px_30px_rgba(0,24,40,0.20)] dark:bg-black/95 dark:border-neutral-800 dark:shadow-[0_-8px_30px_rgba(0,0,0,0.85)] pb-safe transition-colors duration-300"
     >
       <div className="grid grid-cols-5 h-15 max-w-lg mx-auto items-center px-1">
         {ITEMS.map((item) => {
@@ -74,13 +74,13 @@ export function BottomNav() {
               href={item.href}
               className={`relative flex flex-col items-center justify-center py-1 min-h-[48px] rounded-xl transition-all duration-200 active:scale-95 ${
                 isActive
-                  ? "text-sky-400 font-semibold"
-                  : "text-mist-400 hover:text-mist-200"
+                  ? "text-white font-semibold dark:text-sky-400"
+                  : "text-white/78 hover:text-white dark:text-neutral-400 dark:hover:text-neutral-200"
               }`}
             >
               {/* Active top glow indicator */}
               {isActive && (
-                <span className="absolute -top-1.5 w-7 h-1 rounded-full bg-gradient-to-r from-sky-400 to-sky-300 shadow-[0_0_10px_rgba(56,189,248,0.8)]" />
+                <span className="absolute -top-1.5 w-7 h-1 rounded-full bg-gradient-to-r from-sky-300 to-white shadow-[0_0_10px_rgba(255,255,255,0.8)] dark:from-sky-400 dark:to-sky-300 dark:shadow-[0_0_10px_rgba(56,189,248,0.8)]" />
               )}
 
               <div className="relative flex items-center justify-center">

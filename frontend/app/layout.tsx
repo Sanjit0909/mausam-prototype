@@ -6,9 +6,11 @@ import { AuthProvider } from "@/context/AuthContext";
 import { PreferencesProvider } from "@/context/PreferencesContext";
 import { LocationProvider } from "@/context/LocationContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { DynamicWeatherBackground } from "@/components/weather/DynamicWeatherBackground";
 import { Navbar } from "@/components/layout/Navbar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { FloatingAIAssistant } from "@/components/ai/FloatingAIAssistant";
+import { ThemeProvider, type Theme } from "@/context/ThemeContext";
 import { LOCALE_COOKIE_KEY, LOCALE_STORAGE_KEY, isLocale, type Locale } from "@/lib/i18n/translations";
 
 const geistSans = Geist({
@@ -30,29 +32,39 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const cookieStore = await cookies();
   const cookieLocale = cookieStore.get(LOCALE_COOKIE_KEY)?.value;
   const initialLocale: Locale = isLocale(cookieLocale) ? cookieLocale : "en";
+  const cookieTheme = cookieStore.get("mausam_theme")?.value;
+  const initialTheme: Theme = cookieTheme === "dark" ? "dark" : "light";
 
   return (
-    <html lang={initialLocale} suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang={initialLocale}
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} ${initialTheme === "dark" ? "dark" : "light"} h-full antialiased`}
+      data-theme={initialTheme}
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var sk='${LOCALE_STORAGE_KEY}';var ck='${LOCALE_COOKIE_KEY}';var l=localStorage.getItem(sk);if(l!=='en'&&l!=='hi'){var m=document.cookie.match(/(?:^|; )${LOCALE_COOKIE_KEY}=(en|hi)/);l=m?m[1]:null;}if(l==='en'||l==='hi'){document.documentElement.lang=l;document.cookie=ck+'='+l+';path=/;max-age=31536000;SameSite=Lax';localStorage.setItem(sk,l);}}catch(e){}})();`,
+            __html: `(function(){try{var sk='${LOCALE_STORAGE_KEY}';var ck='${LOCALE_COOKIE_KEY}';var l=localStorage.getItem(sk);if(l!=='en'&&l!=='hi'){var m=document.cookie.match(/(?:^|; )${LOCALE_COOKIE_KEY}=(en|hi)/);l=m?m[1]:null;}if(l==='en'||l==='hi'){document.documentElement.lang=l;document.cookie=ck+'='+l+';path=/;max-age=31536000;SameSite=Lax';localStorage.setItem(sk,l);}var tk='mausam:theme';var tck='mausam_theme';var th=localStorage.getItem(tk);if(th!=='light'&&th!=='dark'){var tm=document.cookie.match(/(?:^|; )mausam_theme=(light|dark)/);th=tm?tm[1]:'light';}if(th==='dark'){document.documentElement.classList.add('dark');document.documentElement.classList.remove('light');document.documentElement.setAttribute('data-theme','dark');}else{document.documentElement.classList.remove('dark');document.documentElement.classList.add('light');document.documentElement.setAttribute('data-theme','light');}}catch(e){}})();`,
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-atmospheric text-mist-100">
-        <LanguageProvider initialLocale={initialLocale}>
-          <AuthProvider>
-            <PreferencesProvider>
-              <LocationProvider>
-                <Navbar />
-                <main className="flex-1 pb-16 md:pb-0">{children}</main>
-                <FloatingAIAssistant />
-                <BottomNav />
-              </LocationProvider>
-            </PreferencesProvider>
-          </AuthProvider>
-        </LanguageProvider>
+      <body className="min-h-full flex flex-col bg-atmospheric text-mist-100 transition-colors duration-300">
+        <ThemeProvider initialTheme={initialTheme}>
+          <LanguageProvider initialLocale={initialLocale}>
+            <AuthProvider>
+              <PreferencesProvider>
+                <LocationProvider>
+                  <DynamicWeatherBackground />
+                  <Navbar />
+                  <main className="flex-1 pb-28 md:pb-8">{children}</main>
+                  <FloatingAIAssistant />
+                  <BottomNav />
+                </LocationProvider>
+              </PreferencesProvider>
+            </AuthProvider>
+          </LanguageProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

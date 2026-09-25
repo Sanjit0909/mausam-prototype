@@ -115,11 +115,11 @@ export function PersonaSwitcher() {
   return (
     <div className="glass rounded-3xl p-4 border border-white/10 space-y-2.5">
       <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-sky-400">
-          <Sparkles className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-white dark:text-sky-400 drop-shadow-sm">
+          <Sparkles className="h-3.5 w-3.5 text-white dark:text-sky-400" />
           <span>{locale === "hi" ? "त्वरित पर्सोना स्विच (8 प्रोफाइल)" : "Quick Persona Switcher (8 Profiles)"}</span>
         </div>
-        <span className="text-[10px] text-mist-400">
+        <span className="text-[10px] text-white/80 dark:text-mist-400">
           {locale === "hi" ? "समान मौसम, भिन्न प्राथमिकताएं" : "Same Weather • Different Prioritization"}
         </span>
       </div>
@@ -138,8 +138,8 @@ export function PersonaSwitcher() {
               onClick={() => handleSwitch(persona)}
               className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-semibold transition-all duration-200 active:scale-95 ${
                 isCurrentActive
-                  ? "border-sky-400/80 bg-sky-500/20 text-sky-200 shadow-md shadow-sky-500/20 scale-[1.02]"
-                  : "border-white/10 bg-white/[0.03] text-mist-300 hover:border-white/20 hover:bg-white/[0.07] hover:text-mist-100"
+                  ? "border-white/60 bg-white/30 text-white shadow-md shadow-black/10 dark:border-sky-400/80 dark:bg-sky-500/20 dark:text-sky-200 dark:shadow-sky-500/20 scale-[1.02]"
+                  : "border-white/20 bg-white/10 text-white/90 hover:border-white/40 hover:bg-white/20 hover:text-white dark:border-white/10 dark:bg-white/[0.03] dark:text-mist-300 dark:hover:border-white/20 dark:hover:bg-white/[0.07] dark:hover:text-mist-100"
               }`}
             >
               <Icon

@@ -34,8 +34,8 @@ export default function WeatherDetailsPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 md:px-8 md:py-8 animate-in fade-in duration-300">
       <div>
-        <h1 className="text-xl font-semibold text-mist-100">{t("weather.title")}</h1>
-        <p className="text-sm text-mist-400">{t("weather.subtitle", { name: location.name })}</p>
+        <h1 className="text-2xl font-bold tracking-tight text-white dark:text-neutral-100">{t("weather.title")}</h1>
+        <p className="text-sm font-medium text-white/80 dark:text-neutral-400">{t("weather.subtitle", { name: location.name })}</p>
       </div>
 
       {loading && (
@@ -50,7 +50,7 @@ export default function WeatherDetailsPage() {
 
       {!loading && !error && weather && (
         <>
-          <WeatherHero weather={weather} />
+          <WeatherHero weather={weather} forecast={forecast} />
 
           <Reveal delay={60}>
             <StaggerContainer className="grid grid-cols-2 gap-4 md:grid-cols-4" staggerMs={50}>
@@ -59,7 +59,13 @@ export default function WeatherDetailsPage() {
                 label={t("weather.feelsLike")}
                 value={`${weather.current.feels_like.toFixed(0)}°`}
               />
-              <WeatherMetricCard icon={Droplets} label={t("home.humidity")} value={formatPercent(weather.current.humidity)} />
+              <WeatherMetricCard
+                icon={Droplets}
+                label={t("home.humidity")}
+                value={formatPercent(weather.current.humidity)}
+                progress={weather.current.humidity ?? undefined}
+                progressColor="bg-gradient-to-r from-sky-300 to-cyan-300"
+              />
               <WeatherMetricCard
                 icon={Wind}
                 label={t("home.wind")}

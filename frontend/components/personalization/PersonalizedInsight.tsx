@@ -27,7 +27,7 @@ export function PersonalizedInsight({ insight }: { insight: PersonalizedInsightT
         <Icon className="h-5 w-5 text-sky-300" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-mist-200">{message}</p>
+        <p className="text-sm font-medium text-white dark:text-neutral-200 leading-snug">{message}</p>
         {insight.reason && <WhyThis reason={insight.reason} label={insight.label} className="mt-1" />}
       </div>
     </div>

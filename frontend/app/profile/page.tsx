@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, Check, LogOut, MapPin, Save, Sprout, User } from "lucide-react";
+import { Bell, Check, LogOut, MapPin, Moon, Save, Sprout, Sun, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { InterestSelector } from "@/components/personalization/InterestSelector";
 import { FarmerProfileFields } from "@/components/personalization/FarmerProfileFields";
@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePreferences } from "@/context/PreferencesContext";
 import { useLocation } from "@/context/LocationContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useTheme } from "@/context/ThemeContext";
 import { locationLabel } from "@/lib/utils/format";
 import type { FarmerProfile, InterestKey, PersonaProfile } from "@/lib/types";
 
@@ -26,7 +27,8 @@ export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const { preferences, updatePreferences } = usePreferences();
   const { location, setLocation } = useLocation();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const [name, setName] = useState(preferences.name);
   const [interests, setInterests] = useState<InterestKey[]>(preferences.interests);
   const [farmer, setFarmer] = useState<FarmerProfile>(
@@ -117,6 +119,61 @@ export default function ProfilePage() {
           <FarmerProfileFields value={farmer} onChange={setFarmer} />
         </div>
       )}
+
+      {/* Theme & Visual Mode Selector */}
+      <div className="glass space-y-4 rounded-3xl p-6">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-white/95 dark:text-neutral-200">
+          <Sun className="h-4 w-4 text-amber-400" />
+          <span>{locale === "hi" ? "थीम और दृश्य रूप" : "Appearance & Theme"}</span>
+        </h2>
+        <p className="text-xs text-white/70 dark:text-neutral-400">
+          {locale === "hi"
+            ? "लाइट मोड वायुमंडलीय स्काई ग्रेडिएंट प्रदान करता है, जबकि डार्क मोड शुद्ध ओएलईडी ब्लैक प्रदान करता है।"
+            : "Light mode presents an atmospheric cyan/sky gradient. Dark mode delivers pure OLED deep black."}
+        </p>
+
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            type="button"
+            onClick={() => setTheme("light")}
+            className={`flex flex-col items-center justify-center gap-2.5 rounded-2xl border p-4 text-center transition-all ${
+              theme === "light"
+                ? "border-white/60 bg-white/25 shadow-lg ring-2 ring-white/50"
+                : "border-white/10 bg-white/5 hover:bg-white/10"
+            }`}
+          >
+            <Sun className={`h-6 w-6 ${theme === "light" ? "text-amber-300" : "text-white/60"}`} />
+            <div>
+              <p className="text-sm font-semibold text-white">
+                {locale === "hi" ? "लाइट मोड" : "Light Mode"}
+              </p>
+              <p className="text-[10px] text-white/75">
+                {locale === "hi" ? "डे स्काई ग्रेडिएंट" : "Atmospheric Sky"}
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setTheme("dark")}
+            className={`flex flex-col items-center justify-center gap-2.5 rounded-2xl border p-4 text-center transition-all ${
+              theme === "dark"
+                ? "border-sky-400 bg-neutral-900/90 shadow-lg ring-2 ring-sky-400/40"
+                : "border-white/10 bg-black/40 hover:bg-black/60"
+            }`}
+          >
+            <Moon className={`h-6 w-6 ${theme === "dark" ? "text-sky-400" : "text-neutral-400"}`} />
+            <div>
+              <p className="text-sm font-semibold text-white">
+                {locale === "hi" ? "डार्क मोड" : "Dark Mode"}
+              </p>
+              <p className="text-[10px] text-white/70 dark:text-neutral-400">
+                {locale === "hi" ? "शुद्ध ओएलईडी ब्लैक" : "Pure OLED Black"}
+              </p>
+            </div>
+          </button>
+        </div>
+      </div>
 
       <div className="glass space-y-4 rounded-3xl p-6">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-mist-200">

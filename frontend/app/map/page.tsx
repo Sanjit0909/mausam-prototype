@@ -33,11 +33,11 @@ export default function MapPage() {
     <div className="mx-auto max-w-7xl px-4 py-4 md:px-8 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-mist-100 flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-white dark:text-neutral-100 flex items-center gap-2">
             <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
             Interactive Weather & Satellite Map
           </h1>
-          <p className="text-xs text-mist-400">
+          <p className="text-sm font-medium text-white/80 dark:text-neutral-400 mt-1">
             2D Flat Map & 3D Globe / Terrain Toggle · Doppler Radar & Cloud Cover
           </p>
         </div>

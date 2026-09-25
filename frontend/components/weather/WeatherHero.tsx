@@ -16,15 +16,16 @@ import {
   providerDisplayName,
 } from "@/lib/utils/format";
 import { localizeWeatherCondition } from "@/lib/i18n/localizeWeather";
-import type { WeatherResponse } from "@/lib/types";
+import type { ForecastResponse, WeatherResponse } from "@/lib/types";
 
 interface WeatherHeroProps {
   weather: WeatherResponse;
+  forecast?: ForecastResponse | null;
   title?: string;
   subtitle?: string;
 }
 
-export function WeatherHero({ weather, title, subtitle }: WeatherHeroProps) {
+export function WeatherHero({ weather, forecast, title, subtitle }: WeatherHeroProps) {
   const { current, location } = weather;
   const { locale, t } = useLanguage();
   const [now, setNow] = useState<Date | null>(null);
@@ -61,48 +62,61 @@ export function WeatherHero({ weather, title, subtitle }: WeatherHeroProps) {
         isDay={current.is_day}
       />
 
-      <div className="relative flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-3">
+      <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-2">
+          {/* Location Pin Header (Matching Reference Screenshot) */}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5 text-sm text-mist-300 transition-colors hover:text-sky-300">
-              <MapPin className="h-4 w-4 text-sky-400" />
-              <span className="font-medium">{locationLabel(location)}</span>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-neutral-900/70">
+              <MapPin className="h-4 w-4 text-sky-200 dark:text-sky-400" />
+              <span className="tracking-wide">{locationLabel(location)}</span>
             </div>
+
             <Link
               href="/map"
-              className="inline-flex items-center gap-1.5 rounded-full border border-sky-400/30 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-300 hover:bg-sky-500/20 hover:border-sky-400/50 hover:scale-105 active:scale-95 transition-all duration-200"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white shadow-sm backdrop-blur-md hover:bg-white/25 active:scale-95 transition-all duration-200 dark:border-white/10 dark:bg-neutral-900/80 dark:text-sky-300"
             >
-              <Satellite className="h-3.5 w-3.5 text-sky-400" />
+              <Satellite className="h-3.5 w-3.5 text-sky-200 dark:text-sky-400" />
               <span>Live 2D/3D Radar Map</span>
             </Link>
           </div>
 
           {(title || subtitle) && (
             <div className="pt-1">
-              {title && <p className="text-xs font-semibold uppercase tracking-wide text-sky-400/90">{title}</p>}
-              {subtitle && <p className="text-sm text-mist-400">{subtitle}</p>}
+              {title && <p className="text-xs font-bold uppercase tracking-wider text-white dark:text-sky-400 drop-shadow-sm">{title}</p>}
+              {subtitle && <p className="text-sm text-white/80 dark:text-neutral-400">{subtitle}</p>}
             </div>
           )}
 
-          <div className="flex items-end gap-3 pt-1">
-            <span className="text-7xl font-semibold tracking-tight text-mist-100 md:text-8xl transition-all">
-              <AnimatedTemperature value={Math.round(current.temperature)} />
-            </span>
-            <span className="mb-3 text-lg font-medium text-mist-300 transition-colors">
+          {/* Large Weather Hero: Temperature + Condition (Direct Reference from Screenshot) */}
+          <div className="pt-2">
+            <div className="flex items-baseline gap-2">
+              <span className="text-8xl font-light tracking-tighter text-white sm:text-9xl drop-shadow-sm transition-all leading-none">
+                <AnimatedTemperature value={Math.round(current.temperature)} />
+              </span>
+            </div>
+            <p className="mt-2 text-2xl font-medium tracking-tight text-white/95 sm:text-3xl">
               {localizeWeatherCondition(current.condition, locale)}
-            </span>
+            </p>
           </div>
 
-          <p className="text-sm text-mist-400">
-            {t("home.feelsLike", { temp: "" })}
-            <span className="font-medium text-mist-200">
-              <AnimatedTemperature value={Math.round(current.feels_like)} />
+          {/* High / Low & Feels Like (Exact Reference format: ↑ 33° / ↓ 24°  Feels like 36°) */}
+          <div className="flex flex-wrap items-center gap-3 pt-1 text-sm font-medium text-white/90 dark:text-neutral-300">
+            {forecast?.daily?.[0] ? (
+              <span>
+                ↑ {Math.round(forecast.daily[0].temp_max)}° / ↓ {Math.round(forecast.daily[0].temp_min)}°
+              </span>
+            ) : null}
+            <span>
+              {t("home.feelsLike", { temp: "" })}
+              <span className="font-semibold text-white">
+                <AnimatedTemperature value={Math.round(current.feels_like)} />
+              </span>
             </span>
-            {" · "}
-            {dateLabel}
-            {" · "}
-            {timeLabel}
-          </p>
+            <span className="text-white/60 dark:text-neutral-500 hidden sm:inline">·</span>
+            <span className="text-xs text-white/75 dark:text-neutral-400 hidden sm:inline">
+              {dateLabel} {timeLabel && `(${timeLabel})`}
+            </span>
+          </div>
 
           <SourceBadge
             provider={
@@ -118,7 +132,7 @@ export function WeatherHero({ weather, title, subtitle }: WeatherHeroProps) {
             className="mt-4 inline-flex"
           />
           {weather.observation_station && (
-            <p className="mt-2 text-xs text-mist-500">
+            <p className="mt-2 text-xs text-white/70 dark:text-neutral-400">
               {weather.station_distance_km != null
                 ? t("home.observedAtKm", {
                     station: weather.observation_station,

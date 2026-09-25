@@ -19,8 +19,8 @@ export default function AlertsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
-      <h1 className="text-xl font-semibold text-mist-100">{t("alerts.title")}</h1>
-      <p className="mt-1 text-sm text-mist-400">{t("alerts.subtitle", { name: location.name })}</p>
+      <h1 className="text-2xl font-bold tracking-tight text-white dark:text-neutral-100">{t("alerts.title")}</h1>
+      <p className="mt-1 text-sm font-medium text-white/80 dark:text-neutral-400">{t("alerts.subtitle", { name: location.name })}</p>
 
       <div className="mt-6 space-y-4">
         {loading && <GridSkeleton count={3} />}
@@ -37,7 +37,7 @@ export default function AlertsPage() {
           alerts?.alerts.map((alert) => <AlertCard key={alert.id} alert={alert} />)}
       </div>
 
-      <p className="mt-8 text-xs text-mist-500">
+      <p className="mt-8 text-xs text-white/70 dark:text-neutral-500">
         {t("alerts.disclaimer")}
       </p>
     </div>

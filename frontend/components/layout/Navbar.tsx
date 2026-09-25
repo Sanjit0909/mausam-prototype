@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useLocation } from "@/context/LocationContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/common/LanguageToggle";
+import { ThemeToggle } from "@/components/common/ThemeToggle";
 import { IMDBrandHeader } from "@/components/branding/IMDBrandHeader";
 import type { TranslationKey } from "@/lib/i18n/translations";
 
@@ -43,14 +44,14 @@ export function Navbar() {
       <IMDBrandHeader />
 
       {!isAuthShell && (
-        <div className="border-b border-white/5 bg-navy-950/70 backdrop-blur-xl">
+        <div className="border-b border-white/20 bg-[rgba(25,75,105,0.48)] backdrop-blur-xl dark:border-white/10 dark:bg-black/90 transition-colors duration-300 shadow-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2.5 md:px-8 md:py-3">
             <div className="flex items-center gap-6">
               <Link href="/home" className="flex items-center gap-2 shrink-0">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 shadow-lg shadow-sky-500/20">
                   <CloudSun className="h-5 w-5 text-navy-950" />
                 </div>
-                <span className="text-lg font-semibold tracking-tight text-mist-100">MAUSAM</span>
+                <span className="text-lg font-semibold tracking-tight text-white">MAUSAM</span>
               </Link>
 
               <nav className="hidden md:flex items-center gap-1">
@@ -62,11 +63,11 @@ export function Navbar() {
                       href={link.href}
                       className={`relative min-h-11 flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-95 ${
                         isActive
-                          ? "bg-white/10 text-white font-semibold shadow-sm border border-white/10"
-                          : "text-mist-400 hover:text-mist-100 hover:bg-white/5"
+                          ? "bg-white/20 text-white font-semibold shadow-sm border border-white/30 dark:bg-white/10 dark:border-white/15"
+                          : "text-white/78 hover:text-white hover:bg-white/15 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-900"
                       }`}
                     >
-                      {isActive && <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />}
+                      {isActive && <span className="h-1.5 w-1.5 rounded-full bg-sky-300 dark:bg-sky-400" />}
                       <span>{t(link.labelKey)}</span>
                     </Link>
                   );
@@ -77,27 +78,29 @@ export function Navbar() {
             <div className="flex items-center gap-2 md:gap-3">
               <Link
                 href="/explore"
-                className="hidden sm:flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-sm text-mist-300 hover:border-sky-400/40 hover:bg-white/10 hover:text-mist-100 active:scale-95 transition-all duration-200"
+                className="hidden sm:flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-sm text-white/90 hover:border-white/40 hover:bg-white/20 active:scale-95 transition-all duration-200 dark:border-white/10 dark:bg-neutral-900/80 dark:text-neutral-300 dark:hover:border-neutral-700"
               >
-                <MapPin className="h-3.5 w-3.5 text-sky-400" />
+                <MapPin className="h-3.5 w-3.5 text-sky-300 dark:text-sky-400" />
                 <span className="max-w-[140px] truncate font-medium">{location.name}</span>
                 <Search className="h-3.5 w-3.5 opacity-60" />
               </Link>
 
               <Link
                 href="/demo"
-                className="flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-400/20 active:scale-95 transition-all"
+                className="flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/15 px-3 py-1.5 text-xs font-semibold text-amber-200 hover:bg-amber-400/25 active:scale-95 transition-all dark:bg-amber-400/10 dark:text-amber-300"
                 title="SIH 2026 Judge Demo & Persona Comparison Mode"
               >
                 <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
                 <span>Demo Mode</span>
               </Link>
 
+              <ThemeToggle />
+
               <LanguageToggle />
 
               <Link
                 href="/alerts"
-                className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-mist-300 transition-all duration-200 hover:bg-white/10 hover:text-mist-100 active:scale-95"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-white/85 transition-all duration-200 hover:bg-white/15 active:scale-95 dark:text-neutral-300 dark:hover:bg-neutral-800"
                 aria-label={t("nav.alerts")}
               >
                 <Bell className="h-5 w-5" />
@@ -165,6 +168,9 @@ export function Navbar() {
                   {t(link.labelKey)}
                 </Link>
               ))}
+              <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+                <ThemeToggle showLabel className="w-full justify-center" />
+              </div>
               <Link href="/profile" onClick={() => setMenuOpen(false)} className="min-h-11 rounded-xl px-3 py-2 text-sm text-mist-300 hover:bg-white/5">
                 {t("nav.profileFull")}
               </Link>

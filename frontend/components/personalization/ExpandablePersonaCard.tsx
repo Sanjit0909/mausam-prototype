@@ -228,13 +228,13 @@ export function ExpandablePersonaCard({
               e.stopPropagation();
               setShowWhyModal(true);
             }}
-            className="flex items-center gap-1 rounded-full border border-slate-700/60 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-mist-300 hover:border-sky-400/40 hover:text-white transition-all active:scale-95"
+            className="flex items-center gap-1 rounded-full border border-white/20 dark:border-neutral-800 bg-white/15 dark:bg-white/5 px-2.5 py-1 text-[11px] font-medium text-white/90 dark:text-neutral-300 hover:border-white/40 dark:hover:border-sky-400/40 hover:text-white transition-all active:scale-95 shadow-sm"
             title="View deterministic multi-factor personalization ranking breakdown"
           >
-            <Info className="h-3 w-3 text-sky-400" />
+            <Info className="h-3 w-3 text-sky-200 dark:text-sky-400" />
             <span>{locale === "hi" ? "यह क्यों?" : "Why this?"}</span>
             {scoreBreakdown && scoreBreakdown.totalScore > 0 && (
-              <span className="font-mono text-sky-400 font-bold ml-0.5">
+              <span className="font-mono text-white dark:text-sky-400 font-bold ml-0.5">
                 {scoreBreakdown.totalScore}pt
               </span>
             )}
@@ -244,68 +244,68 @@ export function ExpandablePersonaCard({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex w-full items-start gap-4 px-5 pt-2 pb-5 text-left transition-colors hover:bg-white/[0.03] sm:px-6"
+          className="flex w-full items-start gap-4 px-5 pt-2 pb-5 text-left transition-colors hover:bg-white/[0.04] sm:px-6"
         >
           <div
             className={`mt-0.5 rounded-2xl p-2.5 shrink-0 transition-transform duration-300 group-hover:scale-105 ${
               scoreBreakdown?.isPinned
-                ? "bg-sky-500/20 text-sky-300"
+                ? "bg-sky-500/25 text-white dark:text-sky-300"
                 : isBestRunTime
-                ? "bg-amber-500/15 text-amber-300"
+                ? "bg-amber-400/25 text-white dark:text-amber-300"
                 : isAgromet
-                ? "bg-emerald-500/15 text-emerald-300"
+                ? "bg-emerald-400/25 text-white dark:text-emerald-300"
                 : isCommuteRush
-                ? "bg-blue-500/15 text-blue-300"
-                : "bg-sky-500/10 text-sky-300"
+                ? "bg-blue-400/25 text-white dark:text-blue-300"
+                : "bg-white/15 text-white dark:text-sky-300"
             }`}
           >
             <Icon className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-base font-semibold text-mist-100 transition-colors group-hover:text-white">
+              <h3 className="text-base font-bold text-white transition-colors">
                 {title}
               </h3>
               {isBestRunTime && (
-                <span className="rounded-full bg-amber-400/20 border border-amber-400/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300 animate-pulse [animation-duration:3s]">
+                <span className="rounded-full bg-amber-400/25 border border-amber-300/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-100 dark:text-amber-300 animate-pulse [animation-duration:3s]">
                   Optimal Window
                 </span>
               )}
             </div>
-            <p className="mt-1.5 text-sm leading-relaxed text-mist-300">{summary}</p>
-            <p className="mt-2 text-[11px] text-mist-500 transition-colors group-hover:text-mist-400">
+            <p className="mt-1.5 text-sm leading-relaxed text-white/85 dark:text-neutral-300">{summary}</p>
+            <p className="mt-2 text-[11px] text-white/60 dark:text-neutral-400 transition-colors group-hover:text-white/80">
               {t("persona.tapExpand")}
             </p>
           </div>
           <ChevronDown
-            className={`mt-1 h-5 w-5 shrink-0 text-mist-400 transition-transform duration-300 ${
-              open ? "rotate-180 text-sky-300" : ""
+            className={`mt-1 h-5 w-5 shrink-0 text-white/70 dark:text-neutral-400 transition-transform duration-300 ${
+              open ? "rotate-180 text-white dark:text-sky-300" : ""
             }`}
           />
         </button>
 
         {open && (
-          <div className="space-y-4 border-t border-white/5 px-5 py-5 text-sm text-mist-300 sm:px-6 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="space-y-4 border-t border-white/10 dark:border-white/5 px-5 py-5 text-sm text-white/90 dark:text-neutral-300 sm:px-6 animate-in fade-in slide-in-from-top-2 duration-200">
             {detail && (
               <div>
-                <p className="text-[10px] uppercase tracking-wide text-mist-500">{t("persona.explanation")}</p>
-                <p className="mt-1 leading-relaxed text-mist-200">{detail}</p>
+                <p className="text-[10px] uppercase font-bold tracking-wider text-white/60 dark:text-neutral-400">{t("persona.explanation")}</p>
+                <p className="mt-1 leading-relaxed text-white/90 dark:text-neutral-200">{detail}</p>
               </div>
             )}
             {recommendation && (
-              <div className="rounded-2xl bg-sky-500/10 px-4 py-3 text-mist-100">
-                <p className="text-[10px] uppercase tracking-wide text-sky-400/80">{t("persona.recommendation")}</p>
+              <div className="rounded-2xl bg-white/15 dark:bg-sky-500/10 border border-white/20 dark:border-sky-500/20 px-4 py-3 text-white dark:text-neutral-100">
+                <p className="text-[10px] uppercase font-bold tracking-wider text-sky-200 dark:text-sky-400/80">{t("persona.recommendation")}</p>
                 <p className="mt-1 leading-relaxed">{recommendation}</p>
               </div>
             )}
             {supportRows.length > 0 && (
               <div>
-                <p className="text-[10px] uppercase tracking-wide text-mist-500">{t("persona.supportingData")}</p>
+                <p className="text-[10px] uppercase font-bold tracking-wider text-white/60 dark:text-neutral-400">{t("persona.supportingData")}</p>
                 <dl className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {supportRows.map((row) => (
-                    <div key={row.label} className="rounded-xl bg-black/20 px-3 py-2">
-                      <dt className="text-[10px] uppercase tracking-wide text-mist-500">{row.label}</dt>
-                      <dd className="mt-0.5 text-mist-200 break-words">{row.value}</dd>
+                    <div key={row.label} className="rounded-xl bg-white/10 dark:bg-white/[0.04] border border-white/10 dark:border-white/5 px-3 py-2">
+                      <dt className="text-[10px] uppercase font-medium tracking-wide text-white/70 dark:text-neutral-400">{row.label}</dt>
+                      <dd className="mt-0.5 text-white dark:text-neutral-100 font-semibold break-words">{row.value}</dd>
                     </div>
                   ))}
                 </dl>
@@ -321,7 +321,7 @@ export function ExpandablePersonaCard({
                   href={portal}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex min-h-11 items-center gap-1 text-xs text-sky-400 hover:text-sky-300"
+                  className="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-sky-200 dark:text-sky-400 hover:text-white"
                 >
                   {t("persona.openOfficialPortal")} <ExternalLink className="h-3 w-3" />
                 </a>

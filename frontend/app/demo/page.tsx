@@ -572,11 +572,11 @@ export default function DemoPage() {
           {/* Active Cockpit Live Preview */}
           <div className="space-y-5">
             {/* Context Telemetry Strip */}
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-700/60 bg-navy-900/80 px-5 py-3">
+            <div className="glass flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/20 dark:border-white/10 px-5 py-3">
               <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold text-mist-400">Active Simulation:</span>
+                <span className="text-xs font-semibold text-white/80 dark:text-neutral-400">Active Simulation:</span>
                 <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 text-sky-400" />
+                  <MapPin className="h-3.5 w-3.5 text-sky-200 dark:text-sky-400" />
                   {selectedLocation.name}
                 </span>
                 <span className="opacity-30">•</span>

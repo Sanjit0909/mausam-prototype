@@ -68,13 +68,13 @@ export default function LandingPage() {
       </header>
 
       <section className="mx-auto max-w-5xl px-6 pt-16 pb-20 text-center md:pt-24">
-        <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-mist-300">
-          <Sparkles className="h-3.5 w-3.5 text-sky-400" /> {t("landing.badge")}
+        <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white shadow-sm backdrop-blur-md">
+          <Sparkles className="h-3.5 w-3.5 text-amber-300" /> {t("landing.badge")}
         </span>
-        <h1 className="mt-6 text-4xl font-semibold tracking-tight text-mist-100 md:text-6xl">
+        <h1 className="mt-6 text-4xl font-semibold tracking-tight text-white md:text-6xl drop-shadow-sm">
           {t("landing.heroBefore")} <span className="text-gradient-sky">{t("landing.heroHighlight")}</span>
         </h1>
-        <p className="mx-auto mt-5 max-w-2xl text-base text-mist-300 md:text-lg">{t("landing.subtitle")}</p>
+        <p className="mx-auto mt-5 max-w-2xl text-base text-white/90 md:text-lg font-normal leading-relaxed">{t("landing.subtitle")}</p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             href="/demo"
@@ -86,13 +86,13 @@ export default function LandingPage() {
           </Link>
           <Link
             href="/signup"
-            className="flex items-center gap-2 rounded-full bg-sky-500 px-6 py-3 text-sm font-semibold text-navy-950 hover:bg-sky-400 transition-colors"
+            className="flex items-center gap-2 rounded-full bg-sky-500 px-6 py-3 text-sm font-semibold text-navy-950 hover:bg-sky-400 transition-colors shadow-md"
           >
             {t("landing.ctaPrimary")}
           </Link>
           <Link
             href="/login"
-            className="rounded-full border border-white/15 px-6 py-3 text-sm font-medium text-mist-200 hover:bg-white/5 transition-colors"
+            className="rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-medium text-white hover:bg-white/20 transition-colors backdrop-blur-md"
           >
             {t("landing.ctaSecondary")}
           </Link>
@@ -101,17 +101,17 @@ export default function LandingPage() {
 
       <section className="mx-auto max-w-6xl px-6 pb-20">
         <div className="glass rounded-3xl p-6 md:p-8">
-          <p className="mb-5 text-center text-sm font-medium uppercase tracking-wide text-mist-400">
+          <p className="mb-5 text-center text-xs font-bold uppercase tracking-wider text-sky-200 dark:text-sky-400">
             {t("landing.personasTitle")}
           </p>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
             {PERSONAS.map((p) => (
               <div key={p.labelKey} className="glass-hover flex flex-col items-center gap-2 rounded-2xl p-4 text-center">
-                <div className="rounded-xl bg-sky-500/10 p-2.5">
-                  <p.icon className="h-5 w-5 text-sky-300" />
+                <div className="rounded-xl bg-sky-500/20 p-2.5">
+                  <p.icon className="h-5 w-5 text-sky-200 dark:text-sky-300" />
                 </div>
-                <p className="text-sm font-medium text-mist-100">{t(p.labelKey)}</p>
-                <p className="text-xs text-mist-400">{t(p.detailKey)}</p>
+                <p className="text-sm font-bold text-white">{t(p.labelKey)}</p>
+                <p className="text-xs text-white/80 dark:text-neutral-400 font-medium leading-relaxed">{t(p.detailKey)}</p>
               </div>
             ))}
           </div>
@@ -122,17 +122,17 @@ export default function LandingPage() {
         <div className="grid gap-4 md:grid-cols-2">
           {FEATURES.map((f) => (
             <div key={f.titleKey} className="glass glass-hover rounded-3xl p-6">
-              <div className="mb-4 inline-flex rounded-xl bg-white/5 p-3">
-                <f.icon className="h-5 w-5 text-sky-300" />
+              <div className="mb-4 inline-flex rounded-xl bg-white/10 dark:bg-white/5 p-3">
+                <f.icon className="h-5 w-5 text-sky-200 dark:text-sky-300" />
               </div>
-              <h3 className="font-semibold text-mist-100">{t(f.titleKey)}</h3>
-              <p className="mt-2 text-sm text-mist-400">{t(f.descKey)}</p>
+              <h3 className="text-base font-bold text-white">{t(f.titleKey)}</h3>
+              <p className="mt-2 text-sm text-white/85 dark:text-neutral-300 leading-relaxed font-normal">{t(f.descKey)}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <footer className="border-t border-white/5 px-6 py-8 text-center text-xs text-mist-500">
+      <footer className="border-t border-white/10 px-6 py-8 text-center text-xs text-white/70 dark:text-neutral-500">
         {t("landing.footer", { year: new Date().getFullYear() })}
       </footer>
     </div>

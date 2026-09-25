@@ -10,6 +10,9 @@ import { WeatherChart } from "@/components/weather/WeatherChart";
 import { AQICard } from "@/components/weather/AQICard";
 import { UVCard } from "@/components/weather/UVCard";
 import { SunMoonCard } from "@/components/weather/SunMoonCard";
+import { SunsetArcCard } from "@/components/weather/SunsetArcCard";
+import { ActivitySuitabilityCard } from "@/components/weather/ActivitySuitabilityCard";
+import { RadarPreviewCard } from "@/components/weather/RadarPreviewCard";
 import { MarineCard } from "@/components/weather/MarineCard";
 import { AlertBanner } from "@/components/alerts/AlertBanner";
 import { PersonalizedInsight } from "@/components/personalization/PersonalizedInsight";
@@ -197,12 +200,23 @@ export function PersonaHomeDashboard({
   );
   const heroSubtitle = localizePersonaCardText(persona?.hero_subtitle || "", locale);
 
+  const dewPointEst = Math.round(
+    current.temperature - ((100 - (current.humidity ?? 60)) / 5)
+  );
+
   const metricRenderers: Record<string, React.ReactNode> = {
     humidity: (
       <WeatherMetricCard
         icon={Droplets}
         label={t("home.humidity")}
         value={formatPercent(current.humidity ?? 0)}
+        progress={current.humidity ?? undefined}
+        progressColor="bg-gradient-to-r from-sky-300 to-cyan-300"
+        sublabel={
+          locale === "hi"
+            ? `वर्तमान ओस बिंदु ${dewPointEst}° है`
+            : `The dew point is ${dewPointEst}° right now.`
+        }
       />
     ),
     wind: (
@@ -212,7 +226,11 @@ export function PersonaHomeDashboard({
         value={formatWind(current.wind_speed ?? 0)}
         windDeg={current.wind_direction}
         sublabel={
-          current.wind_direction != null
+          current.wind_speed && current.wind_speed < 15
+            ? locale === "hi"
+              ? "हल्की हवा · अनुकूल"
+              : "Light breeze"
+            : current.wind_direction != null
             ? `${windDirectionLabel(current.wind_direction)} (${current.wind_direction}°)`
             : undefined
         }
@@ -223,6 +241,7 @@ export function PersonaHomeDashboard({
         icon={Gauge}
         label={t("home.pressure")}
         value={formatPressure(current.pressure ?? 1013)}
+        sublabel={locale === "hi" ? "सामान्य वायुमंडलीय दबाव" : "Normal atmospheric pressure"}
       />
     ),
     visibility: (
@@ -230,6 +249,15 @@ export function PersonaHomeDashboard({
         icon={Eye}
         label={t("home.visibility")}
         value={formatVisibility(current.visibility ?? 10)}
+        sublabel={
+          (current.visibility ?? 10) >= 10
+            ? locale === "hi"
+              ? "उत्कृष्ट दृश्यता"
+              : "Clear visibility"
+            : locale === "hi"
+            ? "मध्यम दृश्यता"
+            : "Moderate visibility"
+        }
       />
     ),
     rain_probability: (
@@ -240,11 +268,25 @@ export function PersonaHomeDashboard({
           forecast?.hourly?.[0]?.precipitation_probability ??
             (current.precipitation ? 80 : 0)
         )}
+        progress={
+          forecast?.hourly?.[0]?.precipitation_probability ??
+          (current.precipitation ? 80 : 0)
+        }
+        progressColor="bg-gradient-to-r from-blue-400 to-indigo-400"
       />
     ),
     uv_index: current.uv_index != null ? <UVCard uvIndex={current.uv_index} /> : null,
     aqi: airQuality ? <AQICard data={airQuality} /> : null,
   };
+
+  const activityName =
+    normalizedPersonaId === "farmer"
+      ? locale === "hi" ? "कृषि कार्य अनुकूलता" : "Field Work Suitability"
+      : normalizedPersonaId === "runner"
+      ? locale === "hi" ? "दौड़ अनुकूलता" : "Running"
+      : normalizedPersonaId === "commuter"
+      ? locale === "hi" ? "आवागमन अनुकूलता" : "Commuting"
+      : locale === "hi" ? "दौड़ और फिटनेस" : "Running";
 
   const hasActiveAlerts = alerts && alerts.alerts.length > 0;
 
@@ -257,14 +299,19 @@ export function PersonaHomeDashboard({
         </Reveal>
       )}
 
-      {/* Hero Weather Cockpit */}
+      {/* Hero Weather Cockpit (Location, Big 30°, Condition, Hi/Low & Feels Like, Radar Pill, Source Badge) */}
       <Reveal delay={50}>
-        <WeatherHero weather={weather} title={heroTitle} subtitle={heroSubtitle} />
+        <WeatherHero
+          weather={weather}
+          forecast={forecast}
+          title={heroTitle}
+          subtitle={heroSubtitle}
+        />
       </Reveal>
 
       {/* Restore Hidden Cards banner if user previously hid any card */}
       {hiddenCardIds.size > 0 && (
-        <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-2 text-xs text-mist-300">
+        <div className="flex items-center justify-between rounded-2xl border border-white/20 dark:border-zinc-800 bg-white/10 dark:bg-zinc-900/60 backdrop-blur-md px-4 py-2 text-xs text-white/90 dark:text-zinc-300">
           <span>
             {locale === "hi"
               ? `${hiddenCardIds.size} कार्ड छिपाए गए हैं`
@@ -272,7 +319,7 @@ export function PersonaHomeDashboard({
           </span>
           <button
             onClick={handleRestoreHiddenCards}
-            className="flex items-center gap-1 text-sky-400 hover:text-sky-300 font-semibold"
+            className="flex items-center gap-1 text-sky-200 dark:text-sky-400 hover:text-white font-semibold"
           >
             <RotateCcw className="h-3 w-3" />
             <span>{locale === "hi" ? "सभी पुनर्स्थापित करें" : "Restore all"}</span>
@@ -280,14 +327,178 @@ export function PersonaHomeDashboard({
         </div>
       )}
 
+      {/* Desktop (lg+) 2-Column Atmospheric Grid Matching Reference Screenshot */}
+      <div className="hidden lg:grid lg:grid-cols-12 lg:gap-6">
+        {/* Primary Left Column: Hourly Temperature Curve & Multi-Day Forecast */}
+        <div className="space-y-6 lg:col-span-7">
+          {/* Hourly Forecast Curve with Weather Icons & Rain Probabilities */}
+          {forecast && (
+            <Reveal delay={100}>
+              <HourlyForecast hourly={forecast.hourly} />
+            </Reveal>
+          )}
+
+          {/* Multi-Day Forecast with Horizontal Range Gradient Bars */}
+          {forecast && (
+            <Reveal delay={150}>
+              <div>
+                {normalizedPersonaId === "farmer" && (
+                  <h2 className="mb-3 text-sm font-semibold text-white/90 dark:text-neutral-200">
+                    {t("persona.term.dailyOutlook")}
+                  </h2>
+                )}
+                <DailyForecast daily={forecast.daily} />
+              </div>
+            </Reveal>
+          )}
+
+          {/* Temperature & Rainfall Trend Charts */}
+          {forecast && (
+            <Reveal delay={200}>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="glass rounded-3xl p-5 sm:p-6">
+                  <h3 className="mb-2 text-sm font-semibold text-white/90 dark:text-neutral-200">
+                    {normalizedPersonaId === "farmer" ? t("persona.charts.farmTemp") : t("home.tempTrend")}
+                  </h3>
+                  <WeatherChart hourly={forecast.hourly} variant="temperature" />
+                </div>
+                <div className="glass rounded-3xl p-5 sm:p-6">
+                  <h3 className="mb-2 text-sm font-semibold text-white/90 dark:text-neutral-200">
+                    {normalizedPersonaId === "farmer" ? t("persona.charts.farmRain") : t("home.rainProb")}
+                  </h3>
+                  <WeatherChart hourly={forecast.hourly} variant="rain" />
+                </div>
+              </div>
+            </Reveal>
+          )}
+        </div>
+
+        {/* Secondary Right Column: Sunset Arc, Running Suitability, Radar Preview & Metrics */}
+        <div className="space-y-6 lg:col-span-5">
+          {/* Sunset Arc Card (Matching Reference Screenshot) */}
+          <Reveal delay={100}>
+            <SunsetArcCard data={astronomy} />
+          </Reveal>
+
+          {/* Running / Outdoor Activity Suitability Card (Matching Reference Screenshot) */}
+          <Reveal delay={150}>
+            <ActivitySuitabilityCard
+              current={current}
+              hourly={forecast?.hourly}
+              activityName={activityName}
+            />
+          </Reveal>
+
+          {/* Radar & Doppler Map Preview Card (Matching Reference Screenshot) */}
+          <Reveal delay={200}>
+            <RadarPreviewCard location={weather.location} current={current} />
+          </Reveal>
+
+          {/* Secondary Metric Highlights Grid (AQI bar, UV slider, Humidity, Wind, etc.) */}
+          {orderedMetricKeys.length > 0 && (
+            <Reveal delay={250}>
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-white/80 dark:text-neutral-400">
+                  {t("persona.section.moreMetrics")}
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {orderedMetricKeys.map((metricKey) => (
+                    <div key={metricKey}>{metricRenderers[metricKey]}</div>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile (< lg) Intentional Scan Flow: Hero -> Hourly -> Sunset & Suitability -> Radar -> Metrics -> Multi-Day -> Charts */}
+      <div className="space-y-6 lg:hidden">
+        {/* 1. Hourly Forecast */}
+        {forecast && (
+          <Reveal delay={100}>
+            <HourlyForecast hourly={forecast.hourly} />
+          </Reveal>
+        )}
+
+        {/* 2. Sunset Arc Card */}
+        <Reveal delay={120}>
+          <SunsetArcCard data={astronomy} />
+        </Reveal>
+
+        {/* 3. Activity Suitability Card */}
+        <Reveal delay={140}>
+          <ActivitySuitabilityCard
+            current={current}
+            hourly={forecast?.hourly}
+            activityName={activityName}
+          />
+        </Reveal>
+
+        {/* 4. Radar & Doppler Map Preview */}
+        <Reveal delay={160}>
+          <RadarPreviewCard location={weather.location} current={current} />
+        </Reveal>
+
+        {/* 5. Highlight Metrics (AQI, UV, Humidity, Wind) */}
+        {orderedMetricKeys.length > 0 && (
+          <Reveal delay={180}>
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-white/80 dark:text-neutral-400">
+                {t("persona.section.moreMetrics")}
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                {orderedMetricKeys.map((metricKey) => (
+                  <div key={metricKey}>{metricRenderers[metricKey]}</div>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+        )}
+
+        {/* 6. Multi-Day Forecast */}
+        {forecast && (
+          <Reveal delay={200}>
+            <div>
+              {normalizedPersonaId === "farmer" && (
+                <h2 className="mb-3 text-sm font-semibold text-white/90 dark:text-neutral-200">
+                  {t("persona.term.dailyOutlook")}
+                </h2>
+              )}
+              <DailyForecast daily={forecast.daily} />
+            </div>
+          </Reveal>
+        )}
+
+        {/* 7. Temperature & Rainfall Trend Charts */}
+        {forecast && (
+          <Reveal delay={220}>
+            <div className="space-y-4">
+              <div className="glass rounded-3xl p-5">
+                <h3 className="mb-2 text-sm font-semibold text-white/90 dark:text-neutral-200">
+                  {normalizedPersonaId === "farmer" ? t("persona.charts.farmTemp") : t("home.tempTrend")}
+                </h3>
+                <WeatherChart hourly={forecast.hourly} variant="temperature" />
+              </div>
+              <div className="glass rounded-3xl p-5">
+                <h3 className="mb-2 text-sm font-semibold text-white/90 dark:text-neutral-200">
+                  {normalizedPersonaId === "farmer" ? t("persona.charts.farmRain") : t("home.rainProb")}
+                </h3>
+                <WeatherChart hourly={forecast.hourly} variant="rain" />
+              </div>
+            </div>
+          </Reveal>
+        )}
+      </div>
+
       {/* PHASE 4 & 8: Dynamically Ranked Specialty Persona Cards */}
       {orderedIds.length > 0 && (
-        <section aria-label="Personalized Weather Intelligence" className="space-y-4">
+        <section aria-label="Personalized Weather Intelligence" className="space-y-4 pt-4">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-semibold tracking-wide uppercase text-sky-400">
+            <h2 className="text-sm font-bold tracking-wide uppercase text-white dark:text-sky-400">
               {locale === "hi" ? "प्राथमिकता-आधारित इंटेलिजेंस" : "Ranked Personal Intelligence"}
             </h2>
-            <span className="text-[11px] text-mist-400">
+            <span className="text-[11px] font-medium text-white/70 dark:text-neutral-400">
               {locale === "hi" ? "मल्टी-फैक्टर स्कोरिंग द्वारा व्यवस्थित" : "Multi-factor Deterministic Order"}
             </span>
           </div>
@@ -315,7 +526,7 @@ export function PersonaHomeDashboard({
       {/* Personalized Insights */}
       {insights && insights.insights.length > 0 && (
         <Reveal delay={100}>
-          <div className="space-y-3">
+          <div className="space-y-3 pt-2">
             {insights.insights.slice(0, 2).map((insight, i) => (
               <PersonalizedInsight key={i} insight={insight} />
             ))}
@@ -323,27 +534,11 @@ export function PersonaHomeDashboard({
         </Reveal>
       )}
 
-      {/* Compact Secondary Metrics Grid */}
-      {orderedMetricKeys.length > 0 && (
-        <Reveal delay={150}>
-          <div>
-            <h2 className="mb-3 text-sm font-semibold text-mist-200">
-              {t("persona.section.moreMetrics")}
-            </h2>
-            <StaggerContainer className="grid grid-cols-2 gap-4 md:grid-cols-4" staggerMs={50}>
-              {orderedMetricKeys.map((metricKey) => (
-                <div key={metricKey}>{metricRenderers[metricKey]}</div>
-              ))}
-            </StaggerContainer>
-          </div>
-        </Reveal>
-      )}
-
       {/* AI Recommendations */}
       {insights && insights.recommendations.length > 0 && (
         <Reveal delay={200}>
-          <div>
-            <h2 className="mb-3 text-sm font-semibold text-mist-200">
+          <div className="pt-2">
+            <h2 className="mb-3 text-sm font-semibold text-white/90 dark:text-neutral-200">
               {t(personaConfig.terminology.recommendations as TranslationKey)}
             </h2>
             <StaggerContainer className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" staggerMs={60}>
@@ -355,54 +550,15 @@ export function PersonaHomeDashboard({
         </Reveal>
       )}
 
-      {/* Forecast Trend Charts */}
-      {forecast && (
-        <Reveal delay={250}>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div className="glass rounded-3xl p-6">
-              <h3 className="mb-2 text-sm font-semibold text-mist-200">
-                {normalizedPersonaId === "farmer" ? t("persona.charts.farmTemp") : t("home.tempTrend")}
-              </h3>
-              <WeatherChart hourly={forecast.hourly} variant="temperature" />
-            </div>
-            <div className="glass rounded-3xl p-6">
-              <h3 className="mb-2 text-sm font-semibold text-mist-200">
-                {normalizedPersonaId === "farmer" ? t("persona.charts.farmRain") : t("home.rainProb")}
-              </h3>
-              <WeatherChart hourly={forecast.hourly} variant="rain" />
-            </div>
-          </div>
-        </Reveal>
-      )}
-
-      {/* Hourly Forecast */}
-      {forecast && (
-        <Reveal delay={300}>
-          <HourlyForecast hourly={forecast.hourly} />
-        </Reveal>
-      )}
-
-      {/* Multi-day Forecast */}
-      {forecast && (
-        <Reveal delay={350}>
-          <div>
-            {normalizedPersonaId === "farmer" && (
-              <h2 className="mb-3 text-sm font-semibold text-mist-200">{t("persona.term.dailyOutlook")}</h2>
-            )}
-            <DailyForecast daily={forecast.daily} />
-          </div>
-        </Reveal>
-      )}
-
-      {/* Astronomy & Marine */}
+      {/* Astronomy Detail & Marine */}
       {astronomy && (
-        <Reveal delay={400}>
+        <Reveal delay={300}>
           <SunMoonCard data={astronomy} />
         </Reveal>
       )}
 
       {marine && marine.available && (
-        <Reveal delay={450}>
+        <Reveal delay={350}>
           <MarineCard data={marine} />
         </Reveal>
       )}

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-navy-950: #05070d;
   --color-navy-900: #080b16;
@@ -9,18 +11,20 @@
   --color-navy-500: #263153;
   --color-navy-400: #384368;
 
-  --color-mist-100: #f4f7fc;
-  --color-mist-200: #dbe4f3;
-  --color-mist-300: #b6c4e0;
-  --color-mist-400: #8b9bc2;
+  --color-mist-100: var(--mist-100);
+  --color-mist-200: var(--mist-200);
+  --color-mist-300: var(--mist-300);
+  --color-mist-400: var(--mist-400);
+  --color-mist-500: var(--mist-500);
 
-  --color-sky-400: #4fc3f7;
-  --color-sky-500: #29b6f6;
-  --color-sky-600: #0ea5e9;
+  --color-sky-300: #7dd3fc;
+  --color-sky-400: #38bdf8;
+  --color-sky-500: #0ea5e9;
+  --color-sky-600: #0284c7;
 
-  --color-amber-300: #fcd34d;
-  --color-amber-400: #fbbf24;
-  --color-amber-500: #f59e0b;
+  --color-amber-300: #fde047;
+  --color-amber-400: #facc15;
+  --color-amber-500: #eab308;
 
   --color-rose-400: #fb7185;
   --color-rose-500: #f43f5e;
@@ -34,8 +38,51 @@
 }
 
 :root {
-  --background: var(--color-navy-950);
-  --foreground: var(--color-mist-100);
+  /* LIGHT MODE (Soft Muted Atmospheric Blue - Reduced Saturation, High Contrast) */
+  --bg-app: #185a6e;
+  --bg-atmospheric: linear-gradient(180deg, #5b9ec2 0%, #468cae 18%, #367d9f 35%, #256b87 55%, #185a6e 78%, #104757 100%);
+  --card-glass-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.16) 100%);
+  --card-glass-border: rgba(255, 255, 255, 0.38);
+  --card-glass-shadow: 0 10px 32px -4px rgba(0, 24, 40, 0.15), inset 0 1px 1px 0 rgba(255, 255, 255, 0.55);
+  --card-hover-border: rgba(255, 255, 255, 0.60);
+  --card-hover-shadow: 0 16px 40px -4px rgba(0, 24, 40, 0.22), inset 0 1px 1px rgba(255, 255, 255, 0.70);
+  --nav-glass-bg: rgba(25, 75, 105, 0.50);
+  --nav-glass-border: rgba(255, 255, 255, 0.22);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.88);
+  --text-muted: rgba(255, 255, 255, 0.72);
+  --pill-bg: rgba(255, 255, 255, 0.18);
+  --pill-border: rgba(255, 255, 255, 0.32);
+
+  --mist-100: #ffffff;
+  --mist-200: #f8fafc;
+  --mist-300: rgba(255, 255, 255, 0.92);
+  --mist-400: rgba(255, 255, 255, 0.82);
+  --mist-500: rgba(255, 255, 255, 0.68);
+}
+
+.dark {
+  /* DARK MODE (Pure OLED Black #000000 Theme) */
+  --bg-app: #000000;
+  --bg-atmospheric: #000000;
+  --card-glass-bg: linear-gradient(180deg, #141414 0%, #0d0d0d 100%);
+  --card-glass-border: rgba(255, 255, 255, 0.10);
+  --card-glass-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.85), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  --card-hover-border: rgba(255, 255, 255, 0.22);
+  --card-hover-shadow: 0 16px 45px -4px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  --nav-glass-bg: rgba(10, 10, 10, 0.90);
+  --nav-glass-border: rgba(255, 255, 255, 0.10);
+  --text-primary: #ffffff;
+  --text-secondary: #e4e4e7;
+  --text-muted: #a1a1aa;
+  --pill-bg: rgba(255, 255, 255, 0.06);
+  --pill-border: rgba(255, 255, 255, 0.12);
+
+  --mist-100: #ffffff;
+  --mist-200: #f1f5f9;
+  --mist-300: #cbd5e1;
+  --mist-400: #a1a1aa;
+  --mist-500: #71717a;
 }
 
 * {
@@ -43,8 +90,8 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background-color: var(--bg-app);
+  color: var(--text-primary);
   font-family: var(--font-sans);
   min-height: 100dvh;
 }
@@ -61,23 +108,37 @@ body {
   }
 }
 
-/* Atmospheric layered background used behind the main app shell */
+/* Atmospheric Layered Background (Sky-Blue in Light Mode, Pure Black in Dark Mode) */
 .bg-atmospheric {
-  background-color: var(--color-navy-950);
-  background-image:
-    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(41, 182, 246, 0.16), transparent),
-    radial-gradient(ellipse 60% 40% at 90% 0%, rgba(251, 191, 36, 0.08), transparent),
-    radial-gradient(ellipse 70% 60% at 50% 110%, rgba(19, 26, 46, 0.9), transparent);
+  background-color: var(--bg-app);
+  background-image: var(--bg-atmospheric);
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center top;
+}
+
+.dark .bg-atmospheric {
+  background-color: #000000;
+  background-image: none;
   background-attachment: fixed;
 }
 
-/* Glassmorphism card - the base visual language of the app */
+/* Glassmorphism Card System */
 .glass {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: var(--card-glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--card-glass-border);
+  box-shadow: var(--card-glass-shadow);
+  border-radius: 1.75rem;
+}
+
+.glass-subtle {
+  background: var(--pill-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--pill-border);
+  border-radius: 1.25rem;
 }
 
 .glass-hover {
@@ -86,36 +147,45 @@ body {
 
 .glass-hover:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: var(--card-hover-border);
+  box-shadow: var(--card-hover-shadow);
 }
 
+/* Typography Gradient */
 .text-gradient-sky {
-  background: linear-gradient(135deg, var(--color-sky-400), var(--color-mist-100));
+  background: linear-gradient(135deg, var(--color-sky-300), #ffffff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-/* Subtle scrollbar that fits the dark theme */
+/* Sleek Scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.20);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.35);
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Animations */
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  50% { transform: translateY(-5px); }
 }
 .animate-float {
   animation: float 6s ease-in-out infinite;
@@ -126,7 +196,7 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in-up {
-  animation: fade-in-up 0.5s ease both;
+  animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* Shimmer effect for sleek loading skeletons */
@@ -146,7 +216,7 @@ body {
   background-image: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0.12) 50%,
     rgba(255, 255, 255, 0) 100%
   );
   animation: shimmer 2s infinite ease-in-out;
@@ -154,8 +224,8 @@ body {
 
 /* Atmospheric weather hero background animations */
 @keyframes sun-radiance {
-  0%, 100% { opacity: 0.25; transform: scale(1); }
-  50% { opacity: 0.45; transform: scale(1.08); }
+  0%, 100% { opacity: 0.30; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(1.08); }
 }
 .animate-sun-radiance {
   animation: sun-radiance 9s ease-in-out infinite;
@@ -173,11 +243,11 @@ body {
 @keyframes severe-breath {
   0%, 100% {
     box-shadow: 0 0 0 rgba(244, 63, 94, 0);
-    border-color: rgba(244, 63, 94, 0.3);
+    border-color: rgba(244, 63, 94, 0.4);
   }
   50% {
-    box-shadow: 0 0 25px rgba(244, 63, 94, 0.22);
-    border-color: rgba(244, 63, 94, 0.6);
+    box-shadow: 0 0 25px rgba(244, 63, 94, 0.3);
+    border-color: rgba(244, 63, 94, 0.8);
   }
 }
 .animate-severe-breath {
@@ -195,8 +265,8 @@ body {
 
 /* Subtle launcher button breathing glow */
 @keyframes idle-glow {
-  0%, 100% { box-shadow: 0 8px 25px rgba(56, 189, 248, 0.25); }
-  50% { box-shadow: 0 12px 35px rgba(56, 189, 248, 0.45); }
+  0%, 100% { box-shadow: 0 8px 25px rgba(56, 189, 248, 0.35); }
+  50% { box-shadow: 0 12px 35px rgba(56, 189, 248, 0.6); }
 }
 .animate-idle-glow {
   animation: idle-glow 4s ease-in-out infinite;
@@ -221,5 +291,3 @@ body {
     scroll-behavior: auto !important;
   }
 }
-
-

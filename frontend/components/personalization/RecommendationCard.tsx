@@ -38,19 +38,19 @@ export function RecommendationCard({ card }: { card: RecommendationCardType }) {
   const description = localizeAlertDescription(card.description, locale);
 
   return (
-    <div className="glass group relative flex flex-col justify-between rounded-3xl p-5 border border-white/10 transition-all duration-300 hover:-translate-y-1 hover:border-amber-400/30 hover:shadow-[0_12px_35px_rgba(0,0,0,0.4),0_0_20px_rgba(251,191,36,0.06)]">
+    <div className="glass group relative flex flex-col justify-between rounded-3xl p-5 border border-white/20 dark:border-white/10 transition-all duration-300 hover:-translate-y-1 hover:border-white/40 dark:hover:border-amber-400/30 hover:shadow-xl">
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <span className="rounded-full bg-white/5 border border-white/5 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-mist-400 transition-colors group-hover:text-mist-200">
+          <span className="rounded-full bg-white/15 dark:bg-white/5 border border-white/20 dark:border-white/5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/90 dark:text-neutral-400 transition-colors">
             {labelKey ? t(labelKey) : card.interest}
           </span>
-          <div className="rounded-xl bg-amber-500/10 p-2 transition-all duration-300 group-hover:bg-amber-500/20 group-hover:scale-110">
-            <Icon className="h-4 w-4 text-amber-400" />
+          <div className="rounded-xl bg-amber-400/20 dark:bg-amber-500/10 p-2 transition-all duration-300 group-hover:scale-110">
+            <Icon className="h-4 w-4 text-amber-200 dark:text-amber-400" />
           </div>
         </div>
         <div>
-          <h4 className="font-semibold text-mist-100 transition-colors group-hover:text-white">{title}</h4>
-          <p className="mt-1 text-sm text-mist-400 leading-relaxed">{description}</p>
+          <h4 className="font-bold text-white transition-colors">{title}</h4>
+          <p className="mt-1 text-sm text-white/80 dark:text-neutral-300 leading-relaxed">{description}</p>
         </div>
       </div>
       {card.reason && (

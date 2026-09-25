@@ -52,9 +52,9 @@ export default function ExplorePage() {
         <div>
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <h1 className="text-xl font-semibold text-mist-100">Live Satellite & Radar Map</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-white dark:text-neutral-100">Live Satellite & Radar Map</h1>
           </div>
-          <p className="mt-1 text-sm text-mist-400">
+          <p className="mt-1 text-sm font-medium text-white/80 dark:text-neutral-400">
             Real-time Doppler precipitation, satellite cloud imagery, and 3D terrain elevation for {location.name}
           </p>
         </div>
@@ -69,7 +69,7 @@ export default function ExplorePage() {
 
       {/* Popular Cities Grid */}
       <div className="mt-8">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-mist-400">
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-white/80 dark:text-neutral-400">
           {t("explore.popular")}
         </h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -79,16 +79,16 @@ export default function ExplorePage() {
               onClick={() => handleSelect(city)}
               className={`glass glass-hover flex items-center gap-2.5 rounded-2xl p-3.5 text-left transition-all ${
                 location.name === city.name
-                  ? "border-sky-400/50 bg-sky-500/10 shadow-lg shadow-sky-500/10"
+                  ? "border-white/60 dark:border-sky-400/50 bg-white/20 dark:bg-sky-500/10 shadow-lg"
                   : ""
               }`}
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 text-sky-400 shrink-0">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 dark:bg-white/5 text-sky-200 dark:text-sky-400 shrink-0">
                 <MapPin className="h-4 w-4" />
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-mist-100">{city.name}</p>
-                <p className="truncate text-xs text-mist-400">{city.admin1}</p>
+                <p className="truncate text-sm font-bold text-white">{city.name}</p>
+                <p className="truncate text-xs font-medium text-white/70 dark:text-neutral-400">{city.admin1}</p>
               </div>
             </button>
           ))}
