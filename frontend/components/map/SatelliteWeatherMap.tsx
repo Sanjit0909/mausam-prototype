@@ -27,11 +27,13 @@ import type { LocationSearchResult } from "@/lib/types";
 
 // Free, reliable tile providers
 const ESRI_SATELLITE = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_BASEMAP_KEY?.trim() || "";
+const CARTO_QUERY = CARTO_KEY ? `?key=${CARTO_KEY}` : "";
 const CARTO_VOYAGER_LABELS = [
-  "https://a.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png",
-  "https://b.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png",
-  "https://c.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png",
-  "https://d.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png",
+  `https://a.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png${CARTO_QUERY}`,
+  `https://b.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png${CARTO_QUERY}`,
+  `https://c.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png${CARTO_QUERY}`,
+  `https://d.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png${CARTO_QUERY}`,
 ];
 const DEM_TERRAIN = "https://demotiles.maplibre.org/terrain-tiles/{z}/{x}/{y}.png";
 
