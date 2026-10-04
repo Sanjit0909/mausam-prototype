@@ -36,6 +36,8 @@ const CARTO_VOYAGER_LABELS = [
   `https://d.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png${CARTO_QUERY}`,
 ];
 const DEM_TERRAIN = "https://demotiles.maplibre.org/terrain-tiles/{z}/{x}/{y}.png";
+const OWM_KEY = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY?.trim() || "8308ee43ef4d3e508f8415368215e8b6";
+const WAQI_TILES = "https://tiles.aqicn.org/tiles/usepa-aqi/{z}/{x}/{y}.png";
 
 // Popular Indian cities for instant exploration
 const QUICK_CITIES: LocationSearchResult[] = [
@@ -267,7 +269,7 @@ export function SatelliteWeatherMap({
     }
   }, [viewMode, mapLoaded]);
 
-  // Update Weather Overlays (Radar, Infrared Satellite, Heatmap)
+  // Update Weather Overlays (Radar, Infrared Satellite, Heatmap, Wind, AQI)
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
@@ -284,38 +286,57 @@ export function SatelliteWeatherMap({
 
     removeDynamicLayers();
 
-    if (activeLayer === "radar" && radarFrames.length > 0) {
-      const frame = radarFrames[currentFrameIndex];
-      if (frame) {
-        const tileUrl = `${radarHost}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
-        map.addSource("weather-overlay-source", {
-          type: "raster",
-          tiles: [tileUrl],
-          tileSize: 256,
-          maxzoom: 12,
-        });
-        map.addLayer(
-          {
-            id: "weather-overlay-layer",
-            type: "raster",
-            source: "weather-overlay-source",
-            paint: {
-              "raster-opacity": 0.8,
-              "raster-fade-duration": 150,
-            },
-          },
-          "labels-layer" // place below labels so place names remain visible!
-        );
+    let tileUrl = "";
+    let opacity = 0.75;
+    let maxZoom = 18;
+
+    if (activeLayer === "radar") {
+      // If animated scrubber is actively playing or scrubbed, use RainViewer frame when available
+      if (isPlaying && radarFrames.length > 0 && radarFrames[currentFrameIndex]) {
+        tileUrl = `${radarHost}${radarFrames[currentFrameIndex].path}/256/{z}/{x}/{y}/2/1_1.png`;
+        maxZoom = 12;
+        opacity = 0.82;
+      } else {
+        // High-definition live global precipitation Doppler radar from OpenWeatherMap
+        tileUrl = `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`;
+        maxZoom = 18;
+        opacity = 0.85;
       }
-    } else if (activeLayer === "satellite" && satelliteFrames.length > 0) {
-      const latestSat = satelliteFrames[satelliteFrames.length - 1];
-      if (latestSat) {
-        const tileUrl = `${radarHost}${latestSat.path}/256/{z}/{x}/{y}/0/0_0.png`;
+    } else if (activeLayer === "satellite") {
+      // Real-time satellite cloud cover overlay (OpenWeatherMap clouds_new or RainViewer infrared)
+      if (satelliteFrames.length > 0 && satelliteFrames[satelliteFrames.length - 1]) {
+        tileUrl = `${radarHost}${satelliteFrames[satelliteFrames.length - 1].path}/256/{z}/{x}/{y}/0/0_0.png`;
+        maxZoom = 12;
+        opacity = 0.75;
+      } else {
+        tileUrl = `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`;
+        maxZoom = 18;
+        opacity = 0.8;
+      }
+    } else if (activeLayer === "temp") {
+      // Real-time thermal temperature heatmap overlay
+      tileUrl = `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`;
+      maxZoom = 18;
+      opacity = 0.72;
+    } else if (activeLayer === "aqi") {
+      // Real-time World Air Quality Index (WAQI / EPA AQI) station & contour overlay
+      tileUrl = WAQI_TILES;
+      maxZoom = 16;
+      opacity = 0.85;
+    } else if (activeLayer === "wind") {
+      // Wind velocity raster layer underneath streamline particles
+      tileUrl = `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`;
+      maxZoom = 18;
+      opacity = 0.45;
+    }
+
+    if (tileUrl) {
+      try {
         map.addSource("weather-overlay-source", {
           type: "raster",
           tiles: [tileUrl],
           tileSize: 256,
-          maxzoom: 12,
+          maxzoom: maxZoom,
         });
         map.addLayer(
           {
@@ -323,15 +344,17 @@ export function SatelliteWeatherMap({
             type: "raster",
             source: "weather-overlay-source",
             paint: {
-              "raster-opacity": 0.75,
+              "raster-opacity": opacity,
               "raster-fade-duration": 150,
             },
           },
-          "labels-layer"
+          "labels-layer" // place below labels so place names remain crisp and visible!
         );
+      } catch (err) {
+        console.error("Failed to add weather overlay layer:", err);
       }
     }
-  }, [activeLayer, currentFrameIndex, radarFrames, satelliteFrames, radarHost, mapLoaded]);
+  }, [activeLayer, currentFrameIndex, isPlaying, radarFrames, satelliteFrames, radarHost, mapLoaded]);
 
   // Doppler Radar Auto-Playback Loop
   useEffect(() => {
@@ -534,10 +557,6 @@ export function SatelliteWeatherMap({
         }`}
       />
 
-      {/* TEMPERATURE HEATMAP OVERLAY */}
-      {activeLayer === "temp" && (
-        <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-rose-500/25 via-amber-500/15 to-sky-400/20 mix-blend-overlay animate-in fade-in duration-300" />
-      )}
 
       {/* TOP FLOATING HEADER CONTROLS */}
       <div className="absolute top-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
@@ -671,80 +690,95 @@ export function SatelliteWeatherMap({
         ))}
       </div>
 
-      {/* DOPPLER RADAR PLAYBACK TIMELINE SCRUBBER (Bottom container) */}
-      {activeLayer === "radar" && radarFrames.length > 0 && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[92%] max-w-xl rounded-2xl border border-white/15 bg-navy-950/90 p-3.5 backdrop-blur-2xl shadow-2xl">
-          <div className="flex items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsPlaying((p) => !p)}
-                className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500 text-navy-950 font-bold transition-transform hover:scale-105 active:scale-95"
-              >
-                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
-              </button>
+      {/* DOPPLER RADAR PLAYBACK TIMELINE SCRUBBER / HUD */}
+      {activeLayer === "radar" && (
+        radarFrames.length > 0 ? (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[92%] max-w-xl rounded-2xl border border-white/15 bg-navy-950/90 p-3.5 backdrop-blur-2xl shadow-2xl">
+            <div className="flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsPlaying((p) => !p)}
+                  className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500 text-navy-950 font-bold transition-transform hover:scale-105 active:scale-95"
+                >
+                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
+                </button>
 
-              <button
-                onClick={() =>
-                  setCurrentFrameIndex((prev) => (prev > 0 ? prev - 1 : radarFrames.length - 1))
-                }
-                title="Step backward"
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-mist-300 hover:bg-white/10 hover:text-mist-100"
-              >
-                <SkipBack className="h-3.5 w-3.5" />
-              </button>
+                <button
+                  onClick={() =>
+                    setCurrentFrameIndex((prev) => (prev > 0 ? prev - 1 : radarFrames.length - 1))
+                  }
+                  title="Step backward"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-mist-300 hover:bg-white/10 hover:text-mist-100"
+                >
+                  <SkipBack className="h-3.5 w-3.5" />
+                </button>
 
-              <button
-                onClick={() =>
-                  setCurrentFrameIndex((prev) => (prev + 1) % radarFrames.length)
-                }
-                title="Step forward"
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-mist-300 hover:bg-white/10 hover:text-mist-100"
-              >
-                <SkipForward className="h-3.5 w-3.5" />
-              </button>
+                <button
+                  onClick={() =>
+                    setCurrentFrameIndex((prev) => (prev + 1) % radarFrames.length)
+                  }
+                  title="Step forward"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-mist-300 hover:bg-white/10 hover:text-mist-100"
+                >
+                  <SkipForward className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              {/* Current Frame Status Badge */}
+              <div className="flex items-center gap-2">
+                <span
+                  className={`rounded-md px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${
+                    currentFrame?.isForecast
+                      ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/40"
+                      : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                  }`}
+                >
+                  {currentFrame?.isForecast ? "Forecast" : "Live Radar"}
+                </span>
+                <span className="font-mono text-xs font-semibold text-mist-100">
+                  {frameTimeLabel}
+                </span>
+              </div>
             </div>
 
-            {/* Current Frame Status Badge */}
-            <div className="flex items-center gap-2">
-              <span
-                className={`rounded-md px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${
-                  currentFrame?.isForecast
-                    ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/40"
-                    : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                }`}
-              >
-                {currentFrame?.isForecast ? "Forecast" : "Live Radar"}
-              </span>
-              <span className="font-mono text-xs font-semibold text-mist-100">
-                {frameTimeLabel}
-              </span>
+            {/* Interactive Timeline Scrubber Slider */}
+            <div className="mt-2.5 flex items-center gap-3">
+              <span className="text-[10px] font-medium text-mist-400 whitespace-nowrap">-2 hrs</span>
+              <input
+                type="range"
+                min={0}
+                max={radarFrames.length - 1}
+                value={currentFrameIndex}
+                onChange={(e) => {
+                  setIsPlaying(false);
+                  setCurrentFrameIndex(parseInt(e.target.value, 10));
+                }}
+                className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-white/10 accent-sky-400 focus:outline-none"
+              />
+              <span className="text-[10px] font-medium text-indigo-300 whitespace-nowrap">+1 hr</span>
+            </div>
+
+            {/* Color Scale Legend */}
+            <div className="mt-2 flex items-center justify-between text-[10px] text-mist-400 border-t border-white/5 pt-1.5">
+              <span>Light Rain</span>
+              <div className="flex h-2 w-36 rounded-full bg-gradient-to-r from-sky-400 via-emerald-400 via-amber-400 to-rose-600 shadow-inner" />
+              <span>Heavy Storm</span>
             </div>
           </div>
-
-          {/* Interactive Timeline Scrubber Slider */}
-          <div className="mt-2.5 flex items-center gap-3">
-            <span className="text-[10px] font-medium text-mist-400 whitespace-nowrap">-2 hrs</span>
-            <input
-              type="range"
-              min={0}
-              max={radarFrames.length - 1}
-              value={currentFrameIndex}
-              onChange={(e) => {
-                setIsPlaying(false);
-                setCurrentFrameIndex(parseInt(e.target.value, 10));
-              }}
-              className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-white/10 accent-sky-400 focus:outline-none"
-            />
-            <span className="text-[10px] font-medium text-indigo-300 whitespace-nowrap">+1 hr</span>
+        ) : (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded-2xl border border-white/15 bg-navy-950/90 px-4 py-2.5 backdrop-blur-2xl shadow-xl text-xs">
+            <div className="flex items-center gap-1.5 font-semibold text-sky-300">
+              <CloudRain className="h-4 w-4" />
+              <span>Live Doppler Radar</span>
+            </div>
+            <div className="h-3.5 w-px bg-white/15 hidden sm:block" />
+            <div className="flex items-center gap-2 text-[11px] text-mist-300">
+              <span>Light Rain</span>
+              <div className="flex h-2 w-32 rounded-full bg-gradient-to-r from-sky-400 via-emerald-400 via-amber-400 to-rose-600 shadow-inner" />
+              <span>Heavy Storm</span>
+            </div>
           </div>
-
-          {/* Color Scale Legend */}
-          <div className="mt-2 flex items-center justify-between text-[10px] text-mist-400 border-t border-white/5 pt-1.5">
-            <span>Light Rain</span>
-            <div className="flex h-2 w-36 rounded-full bg-gradient-to-r from-sky-400 via-emerald-400 via-amber-400 to-rose-600 shadow-inner" />
-            <span>Heavy Storm</span>
-          </div>
-        </div>
+        )
       )}
 
       {/* WIND VECTORS HUD / LEGEND */}
