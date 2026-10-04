@@ -52,12 +52,12 @@ async def health() -> dict:
     # Fresh read so /health reflects the current .env, not the import-time singleton.
     current = get_settings()
     ai_chain: list[str] = []
-    if current.has_deepseek_key:
-        ai_chain.append("deepseek")
     if current.has_gemini_key:
         ai_chain.append("gemini")
     if current.has_openrouter_key:
         ai_chain.append("openrouter")
+    if current.has_deepseek_key:
+        ai_chain.append("deepseek")
     ai_chain.append("rule-based")
     ai_mode = ai_chain[0]
     return {

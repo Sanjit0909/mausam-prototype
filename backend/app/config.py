@@ -10,10 +10,10 @@ class Settings(BaseSettings):
     env: str = "development"
 
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-3.6-flash"
+    gemini_model: str = "gemini-3.5-flash"
 
     deepseek_api_key: str = ""
-    deepseek_model: str = "deepseek-v4-flash"
+    deepseek_model: str = "deepseek-chat"
     deepseek_base_url: str = "https://api.deepseek.com"
 
     openrouter_api_key: str = ""

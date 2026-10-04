@@ -347,6 +347,10 @@ def _fallback_reply(
     forecast: ForecastResponse | None,
     air_quality: AirQualityResponse | None,
     locale: str,
+    *,
+    alerts: list[WeatherAlert] | None = None,
+    persona: PersonaHomePayload | None = None,
+    profile: PersonaProfile | None = None,
 ) -> str:
     """Keyword-driven template assistant using the same real weather context."""
     current = weather.current
@@ -445,16 +449,46 @@ def _fallback_reply(
             return f"अभी {location}: {current.temperature:.0f}\u00b0C, {current.condition}.{aqi_note}{heat_note}"
         return f"Right now in {location}: {current.temperature:.0f}\u00b0C, {current.condition.lower()}.{aqi_note}{heat_note}"
 
+    persona_type = (profile.primary_persona if profile else None) or (persona.primary_persona if persona else None)
+    persona_advice = ""
+    if persona_type == "farmer":
+        crop_name = (profile.farmer.crop if profile and profile.farmer else None) or ("फसल" if hindi else "crops")
+        crop_stage = (profile.farmer.crop_stage if profile and profile.farmer else None) or ""
+        stage_text = f" ({crop_stage})" if crop_stage else ""
+        if rain_soon:
+            persona_advice = f" किसान सलाह: आने वाले घंटों में वर्षा की संभावना है, अतः {crop_name}{stage_text} में सिंचाई व कीटनाशक छिड़काव स्थगित रखें।" if hindi else f" Farming Note: Rain is probable shortly; consider pausing irrigation and chemical sprays on your {crop_name}{stage_text}."
+        else:
+            persona_advice = f" किसान सलाह: मौसम शुष्क है, {crop_name}{stage_text} में मृदा नमी की नियमित निगरानी करें।" if hindi else f" Farming Note: Dry conditions prevailing; monitor soil moisture regularly for your {crop_name}{stage_text}."
+    elif persona_type == "runner":
+        if current.uv_index and current.uv_index >= 6:
+            persona_advice = " रनर सलाह: दिन में UV इंडेक्स अधिक है, सुबह जल्दी या शाम को दौड़ना स्वास्थ्यप्रद रहेगा।" if hindi else " Runner Note: Elevated UV index today; early morning or evening hours are best for outdoor running."
+        else:
+            persona_advice = " रनर सलाह: वर्तमान तापमान बाहरी वर्कआउट और फिटनेस गतिविधियों के अनुकूल है।" if hindi else " Runner Note: Current outdoor conditions are suitable for fitness routines."
+    elif persona_type in ("commuter", "traveler", "traveller"):
+        if rain_soon:
+            persona_advice = " यात्रा सलाह: वर्षा की संभावना को देखते हुए यात्रा में छाता या रेनकोट साथ रखें व अतिरिक्त समय लेकर निकलें।" if hindi else " Commute Note: Rain is expected; carry an umbrella or rain gear and plan for slight transit delays."
+
+    alert_note = ""
+    if alerts and len(alerts) > 0:
+        top_alert = alerts[0]
+        alert_note = f"\n⚠️ आधिकारिक मौसम चेतावनी: {top_alert.title}।" if hindi else f"\n⚠️ Official Weather Alert: {top_alert.title}."
+
+    rain_outlook = ""
+    if rain_soon:
+        rain_outlook = " अगले कुछ घंटों में वर्षा की संभावना है।" if hindi else " Rain is likely over the next few hours."
+    elif forecast and forecast.hourly:
+        rain_outlook = " आने वाले घंटों में मौसम मुख्यतः स्थिर रहने का अनुमान है।" if hindi else " Weather is expected to remain largely steady over the coming hours."
+
     if hindi:
         return (
-            f"अभी {location}: {current.condition}, {current.temperature:.0f}\u00b0C "
-            f"(महसूस {current.feels_like:.0f}\u00b0C), नमी {_hum()}, "
-            f"हवा {_wind()}।"
+            f"वर्तमान में {location} का मौसम {current.condition} है। तापमान {current.temperature:.0f}°C "
+            f"(महसूस {current.feels_like:.0f}°C), सापेक्ष आर्द्रता {_hum()} तथा हवा की गति {_wind()} दर्ज की गई है।{rain_outlook}"
+            f"{persona_advice}{alert_note}"
         )
     return (
-        f"Right now in {location}: {current.condition}, {current.temperature:.0f}\u00b0C "
-        f"(feels like {current.feels_like:.0f}\u00b0C), humidity {_hum()}, "
-        f"wind {_wind()}."
+        f"Currently in {location}, conditions are {current.condition.lower()} with a temperature of {current.temperature:.0f}°C "
+        f"(feels like {current.feels_like:.0f}°C), humidity at {_hum()}, and wind speed at {_wind()}.{rain_outlook}"
+        f"{persona_advice}{alert_note}"
     )
 
 
@@ -501,47 +535,23 @@ async def generate_reply(
     complexity = classify_question_complexity(message)
     thinking = complexity == "complex"
     logger.info(
-        "[AI] routing start provider=deepseek model=%s complexity=%s thinking=%s",
-        settings.deepseek_model,
+        "[AI] routing start provider=gemini model=%s complexity=%s thinking=%s",
+        settings.gemini_model,
         complexity,
         thinking,
     )
 
-    if settings.has_deepseek_key and _provider_available("deepseek"):
-        started = time.monotonic()
-        try:
-            reply = await _call_deepseek(message, context, history, locale, thinking=thinking)
-            latency = time.monotonic() - started
-            logger.info(
-                "[AI] DeepSeek success model=%s latency=%.2fs thinking=%s fallback=false",
-                settings.deepseek_model,
-                latency,
-                thinking,
-            )
-            result = (reply, "deepseek", False, settings.deepseek_model)
-            _response_cache[cache_key] = (time.monotonic(), result)
-            return result
-        except Exception as exc:  # noqa: BLE001
-            _mark_provider_failure("deepseek")
-            reason = _classify_failure(exc)
-            logger.warning(
-                "[AI] DeepSeek failed provider=deepseek model=%s latency=%.2fs reason=%s "
-                "fallback_to=gemini (no secrets logged)",
-                settings.deepseek_model,
-                time.monotonic() - started,
-                reason,
-            )
-
+    # 1. Tier 1: Gemini (First Priority - lowest latency and best Hindi/multilingual quality)
     if settings.has_gemini_key and _provider_available("gemini"):
         started = time.monotonic()
         try:
             reply = await _call_gemini(message, context, history, locale)
             logger.info(
-                "[AI] Gemini success model=%s latency=%.2fs fallback_used=true",
+                "[AI] Gemini success model=%s latency=%.2fs fallback_used=false",
                 settings.gemini_model,
                 time.monotonic() - started,
             )
-            result = (reply, "gemini", True, settings.gemini_model)
+            result = (reply, "gemini", False, settings.gemini_model)
             _response_cache[cache_key] = (time.monotonic(), result)
             return result
         except Exception as exc:  # noqa: BLE001
@@ -552,6 +562,7 @@ async def generate_reply(
                 _classify_failure(exc),
             )
 
+    # 2. Tier 2: OpenRouter (Second Priority - free tier redundancy)
     if settings.has_openrouter_key and _provider_available("openrouter"):
         started = time.monotonic()
         try:
@@ -567,12 +578,39 @@ async def generate_reply(
         except Exception as exc:  # noqa: BLE001
             _mark_provider_failure("openrouter")
             logger.warning(
-                "[AI] OpenRouter failed latency=%.2fs reason=%s fallback_to=rules",
+                "[AI] OpenRouter failed latency=%.2fs reason=%s fallback_to=deepseek",
                 time.monotonic() - started,
                 _classify_failure(exc),
             )
 
-    reply = _fallback_reply(message, weather, forecast, air_quality, locale)
+    # 3. Tier 3: DeepSeek (Third Priority)
+    if settings.has_deepseek_key and _provider_available("deepseek"):
+        started = time.monotonic()
+        try:
+            reply = await _call_deepseek(message, context, history, locale, thinking=thinking)
+            latency = time.monotonic() - started
+            logger.info(
+                "[AI] DeepSeek success model=%s latency=%.2fs thinking=%s fallback=true",
+                settings.deepseek_model,
+                latency,
+                thinking,
+            )
+            result = (reply, "deepseek", True, settings.deepseek_model)
+            _response_cache[cache_key] = (time.monotonic(), result)
+            return result
+        except Exception as exc:  # noqa: BLE001
+            _mark_provider_failure("deepseek")
+            reason = _classify_failure(exc)
+            logger.warning(
+                "[AI] DeepSeek failed provider=deepseek model=%s latency=%.2fs reason=%s "
+                "fallback_to=rules (no secrets logged)",
+                settings.deepseek_model,
+                time.monotonic() - started,
+                reason,
+            )
+
+    # 4. Tier 4: Emergency Fallback
+    reply = _fallback_reply(message, weather, forecast, air_quality, locale, alerts=alerts, persona=persona, profile=profile)
     result = (reply, "fallback", True, "rules")
     logger.info("[AI] Rules fallback used fallback_used=true")
     _response_cache[cache_key] = (time.monotonic(), result)
@@ -698,35 +736,9 @@ async def stream_reply(
                 return
         except Exception as exc:  # noqa: BLE001
             _mark_provider_failure("gemini")
-            logger.warning("[AI Stream] Gemini failed: %s, falling back to next provider", exc)
+            logger.warning("[AI Stream] Gemini failed: %s, falling back to OpenRouter", exc)
 
-    # 2. DeepSeek direct streaming (non-thinking for lowest situational latency)
-    if settings.has_deepseek_key and _provider_available("deepseek"):
-        try:
-            started = time.monotonic()
-            emitted_any = False
-            async for token in _stream_openai_compatible(
-                api_key=settings.deepseek_api_key,
-                base_url=settings.deepseek_base_url,
-                model=settings.deepseek_model,
-                message=message,
-                context=context,
-                history=history,
-                locale=locale,
-                timeout=12.0,
-                extra_body={"thinking": {"type": "disabled"}},
-            ):
-                emitted_any = True
-                yield {"token": token, "done": False}
-            if emitted_any:
-                logger.info("[AI Stream] DeepSeek success latency=%.2fs", time.monotonic() - started)
-                yield {"token": "", "done": True, "source": "deepseek", "model": settings.deepseek_model}
-                return
-        except Exception as exc:  # noqa: BLE001
-            _mark_provider_failure("deepseek")
-            logger.warning("[AI Stream] DeepSeek failed: %s, trying OpenRouter", exc)
-
-    # 3. OpenRouter streaming
+    # 2. OpenRouter streaming (Second Priority)
     if settings.has_openrouter_key and _provider_available("openrouter"):
         try:
             started = time.monotonic()
@@ -753,10 +765,36 @@ async def stream_reply(
                 return
         except Exception as exc:  # noqa: BLE001
             _mark_provider_failure("openrouter")
-            logger.warning("[AI Stream] OpenRouter failed: %s, falling back to rules", exc)
+            logger.warning("[AI Stream] OpenRouter failed: %s, falling back to DeepSeek", exc)
+
+    # 3. DeepSeek direct streaming (Third Priority - non-thinking for lowest situational latency)
+    if settings.has_deepseek_key and _provider_available("deepseek"):
+        try:
+            started = time.monotonic()
+            emitted_any = False
+            async for token in _stream_openai_compatible(
+                api_key=settings.deepseek_api_key,
+                base_url=settings.deepseek_base_url,
+                model=settings.deepseek_model,
+                message=message,
+                context=context,
+                history=history,
+                locale=locale,
+                timeout=12.0,
+                extra_body={"thinking": {"type": "disabled"}},
+            ):
+                emitted_any = True
+                yield {"token": token, "done": False}
+            if emitted_any:
+                logger.info("[AI Stream] DeepSeek success latency=%.2fs", time.monotonic() - started)
+                yield {"token": "", "done": True, "source": "deepseek", "model": settings.deepseek_model}
+                return
+        except Exception as exc:  # noqa: BLE001
+            _mark_provider_failure("deepseek")
+            logger.warning("[AI Stream] DeepSeek failed: %s, trying rules fallback", exc)
 
     # 4. Fallback to rules-based template assistant with smooth word streaming
-    fallback_text = _fallback_reply(message, weather, forecast, air_quality, locale)
+    fallback_text = _fallback_reply(message, weather, forecast, air_quality, locale, alerts=alerts, persona=persona, profile=profile)
     words = fallback_text.split(" ")
     for i, w in enumerate(words):
         chunk = w + (" " if i < len(words) - 1 else "")
