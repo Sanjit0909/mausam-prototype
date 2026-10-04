@@ -35,10 +35,10 @@ _response_cache: dict[str, tuple[float, tuple[str, str, bool, str | None]]] = {}
 # Interactive UI: keep waits bounded. Complex/thinking questions get a longer DeepSeek window.
 _DEEPSEEK_TIMEOUT_SIMPLE = 8.0
 _DEEPSEEK_TIMEOUT_COMPLEX = 18.0
-_GEMINI_TIMEOUT = 8.0
+_GEMINI_TIMEOUT = 12.0
 _OPENROUTER_TIMEOUT = 10.0
 _PROVIDER_COOLDOWN = 45.0
-_MAX_OUTPUT_TOKENS = 1024
+_MAX_OUTPUT_TOKENS = 2048
 _TEMPERATURE = 0.3
 _provider_fail_until: dict[str, float] = {}
 
@@ -330,6 +330,7 @@ async def _call_gemini(message: str, context: str, history: list[ChatMessage], l
             config=types.GenerateContentConfig(
                 system_instruction=_system_instruction(context, locale),
                 max_output_tokens=_MAX_OUTPUT_TOKENS,
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
                 temperature=_TEMPERATURE,
             ),
         )
@@ -636,6 +637,7 @@ async def _stream_gemini(
         config=types.GenerateContentConfig(
             system_instruction=_system_instruction(context, locale),
             max_output_tokens=_MAX_OUTPUT_TOKENS,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
             temperature=_TEMPERATURE,
         ),
     )
