@@ -27,6 +27,7 @@ import type { ChatMessage, ChatSource } from "@/lib/types";
 interface DisplayMessage extends ChatMessage {
   id: string;
   source?: ChatSource;
+  model?: string;
 }
 
 const QUICK_SUGGESTIONS = [
@@ -36,11 +37,27 @@ const QUICK_SUGGESTIONS = [
 ];
 
 const SOURCE_LABELS: Record<string, string> = {
-  deepseek: "DeepSeek V4 Flash",
-  gemini: "Gemini 1.5 Flash",
+  deepseek: "DeepSeek Chat",
+  gemini: "Gemini 3.5 Flash",
   openrouter: "OpenRouter",
   fallback: "Verified Rule Engine",
 };
+
+function formatModelLabel(source?: ChatSource, model?: string): string {
+  if (model) {
+    if (model.includes("3.5-flash")) return "Gemini 3.5 Flash";
+    if (model.includes("3.1-flash")) return "Gemini 3.1 Flash Lite";
+    if (model.includes("gemini")) return "Gemini 3.5 Flash";
+    if (model.includes("deepseek")) return "DeepSeek Chat";
+    if (model.includes("openrouter") || model.includes("free")) return "OpenRouter";
+    if (model === "rules") return "Verified Rule Engine";
+    return model;
+  }
+  if (source && SOURCE_LABELS[source]) {
+    return SOURCE_LABELS[source];
+  }
+  return source ? String(source) : "Mausam Live AI";
+}
 
 /**
  * Lightweight, safe markdown formatter for assistant responses.
@@ -304,6 +321,7 @@ export function FloatingAIAssistant() {
               updated[idx] = {
                 ...updated[idx],
                 source: (meta.source as ChatSource) ?? undefined,
+                model: meta.model ?? undefined,
               };
             }
             return updated;
@@ -474,9 +492,7 @@ export function FloatingAIAssistant() {
                     {!isUser && msg.content && (
                       <div className="mt-1 flex items-center justify-between px-1 text-[10px] text-mist-400">
                         <span>
-                          {msg.source
-                            ? SOURCE_LABELS[msg.source] || msg.source
-                            : "Mausam Live AI"}
+                          {formatModelLabel(msg.source, msg.model)}
                         </span>
                         <button
                           onClick={() => handleCopy(msg.id, msg.content)}
